@@ -153,7 +153,8 @@ scene.add(new THREE.AxesHelper(500));
 
 const steelMat = new THREE.MeshStandardMaterial({ color: 0x8e97a1, metalness: 0.55, roughness: 0.4 });
 const railMat = new THREE.MeshStandardMaterial({ color: 0xa8b0ba, metalness: 0.45, roughness: 0.42 });
-const diagMat = steelMat; // 斜杆与其它方钢同色，不单独着色
+// 斜杆着色与桌面参考 HTML 一致；点选高亮仍用蓝色
+const diagMat = new THREE.MeshStandardMaterial({ color: 0xc4a574, metalness: 0.5, roughness: 0.35 });
 const markerMat = new THREE.MeshStandardMaterial({ color: 0xff8c42, transparent: true, opacity: 0.35, depthWrite: false });
 const hiMat = new THREE.MeshStandardMaterial({ color: 0x3b82f6, emissive: 0x1e3a8a, metalness: 0.35, roughness: 0.35 });
 const edgeMat = new THREE.LineBasicMaterial({ color: 0x2c3136 });
