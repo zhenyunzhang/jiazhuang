@@ -94,7 +94,7 @@
     共5级升高280 · 顶550方平台 · 落地柱1<br/>
     床头爬梯口600不焊
   </div>
-  <p class="hint" id="hintLine">单指旋转 · 双指缩放 · 关键杆尺寸线 · 点管子看下料号</p>
+  <p class="hint" id="hintLine">单指旋转 · 双指缩放 · 尺寸线 ——557—— · 点管子看下料</p>
   <div class="btns">
     <button type="button" id="btnReset">复位</button>
     <button type="button" id="btnTube" class="secondary">杆件尺寸</button>
@@ -170,93 +170,86 @@ scene.add(root); scene.add(labelGroup); scene.add(overallGroup);
 const dimMat = new THREE.LineBasicMaterial({ color: 0xffc857 });
 const dimExtMat = new THREE.LineBasicMaterial({ color: 0x8a7340 });
 
-function roundRect(ctx,x,y,w,h,r){
-  ctx.beginPath();
-  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
-  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+function addSeg(group, a, b, mat) {
+  group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), mat));
 }
 
-/** CAD 尺寸文字：贴在尺寸线旁，随模型缩放 */
-function makeDimLabel(text, pos, worldW=420) {
+/** 纯数字（无方格底），嵌在尺寸线缺口里：—— 557 —— */
+function makeDimText(text, pos, worldH=90) {
   const dpr = Math.min(devicePixelRatio || 1, 2);
   const canvas = document.createElement('canvas');
-  canvas.width = 512 * dpr; canvas.height = 128 * dpr;
+  canvas.width = 384 * dpr; canvas.height = 96 * dpr;
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
-  ctx.clearRect(0, 0, 512, 128);
-  ctx.fillStyle = 'rgba(12,14,18,0.82)';
-  roundRect(ctx, 8, 20, 496, 88, 12); ctx.fill();
-  ctx.strokeStyle = 'rgba(255,200,87,0.9)'; ctx.lineWidth = 3; ctx.stroke();
-  ctx.fillStyle = '#ffe6a8';
-  ctx.font = '700 44px "PingFang SC","Helvetica Neue",sans-serif';
+  ctx.clearRect(0, 0, 384, 96);
+  ctx.font = '700 52px "PingFang SC","Helvetica Neue",sans-serif';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  let fs = 44;
-  while (fs > 28 && ctx.measureText(text).width > 460) {
+  let fs = 52;
+  while (fs > 30 && ctx.measureText(text).width > 340) {
     fs -= 2; ctx.font = `700 ${fs}px "PingFang SC","Helvetica Neue",sans-serif`;
   }
-  ctx.fillText(text, 256, 64);
+  ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(10,12,16,0.85)';
+  ctx.strokeText(text, 192, 48);
+  ctx.fillStyle = '#ffd27a';
+  ctx.fillText(text, 192, 48);
   const tex = new THREE.CanvasTexture(canvas);
   tex.needsUpdate = true;
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({
     map: tex, transparent: true, depthTest: true, depthWrite: false,
     sizeAttenuation: true,
   }));
-  sp.scale.set(worldW, worldW * 0.25, 1);
+  const aspect = 384 / 96;
+  sp.scale.set(worldH * aspect * 0.55, worldH * 0.55, 1);
   sp.position.copy(pos);
-  sp.renderOrder = 2;
+  sp.renderOrder = 3;
   return sp;
 }
-
-function addSeg(group, a, b, mat) {
-  group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), mat));
+function dimLenGap(text, worldH) {
+  const n = String(text).length;
+  return Math.max(70, Math.min(220, n * worldH * 0.42));
 }
 
-/** CAD 尺寸（外形总尺用）：可外移 */
-function addCadDim(group, p1, p2, text, offset, labelScale) {
-  const o = offset.clone();
-  const a = p1.clone().add(o);
-  const b = p2.clone().add(o);
+/**
+ * 经典尺寸线：两端刻度 + 中间断开写数字  ——557——
+ */
+function addBrokenDimLine(group, a, b, text) {
   const dimDir = new THREE.Vector3().subVectors(b, a);
   const dimLen = dimDir.length();
   if (dimLen < 1) return;
   dimDir.multiplyScalar(1 / dimLen);
+  const worldH = Math.min(110, Math.max(70, dimLen * 0.06));
+  const gap = Math.min(dimLen * 0.45, dimLenGap(text, worldH));
+  const mid = a.clone().add(b).multiplyScalar(0.5);
+  const half = gap * 0.5;
+  const g0 = mid.clone().addScaledVector(dimDir, -half);
+  const g1 = mid.clone().addScaledVector(dimDir,  half);
+  if (a.distanceTo(g0) > 8) addSeg(group, a, g0, dimMat);
+  if (g1.distanceTo(b) > 8) addSeg(group, g1, b, dimMat);
+  let tick = new THREE.Vector3().crossVectors(dimDir, new THREE.Vector3(0, 1, 0)).normalize();
+  if (tick.lengthSq() < 1e-6) tick = new THREE.Vector3().crossVectors(dimDir, new THREE.Vector3(1, 0, 0)).normalize();
+  const th = 32;
+  addSeg(group, a.clone().addScaledVector(tick, -th), a.clone().addScaledVector(tick, th), dimMat);
+  addSeg(group, b.clone().addScaledVector(tick, -th), b.clone().addScaledVector(tick, th), dimMat);
+  group.add(makeDimText(text, mid, worldH));
+}
+
+/** CAD 尺寸（外形总尺）：引出线 + ——数字—— */
+function addCadDim(group, p1, p2, text, offset, labelScale) {
+  const o = offset.clone();
+  const a = p1.clone().add(o);
+  const b = p2.clone().add(o);
   const over = o.clone().normalize().multiplyScalar(24);
   addSeg(group, p1, a.clone().add(over), dimExtMat);
   addSeg(group, p2, b.clone().add(over), dimExtMat);
-  addSeg(group, a, b, dimMat);
-  let tick = new THREE.Vector3().crossVectors(dimDir, o).normalize();
-  if (tick.lengthSq() < 1e-6) {
-    tick = new THREE.Vector3().crossVectors(dimDir, new THREE.Vector3(0, 1, 0)).normalize();
-  }
-  if (tick.lengthSq() < 1e-6) tick.set(1, 0, 0);
-  const th = 40;
-  addSeg(group, a.clone().addScaledVector(tick, -th), a.clone().addScaledVector(tick, th), dimMat);
-  addSeg(group, b.clone().addScaledVector(tick, -th), b.clone().addScaledVector(tick, th), dimMat);
-  const mid = a.clone().add(b).multiplyScalar(0.5).add(o.clone().normalize().multiplyScalar(40));
-  const w = labelScale || Math.min(520, Math.max(280, dimLen * 0.22));
-  group.add(makeDimLabel(text, mid, w));
+  addBrokenDimLine(group, a, b, text);
 }
 
-/** 尺寸标在钢管上：字落在杆件中点，刻度贴杆端，不往旁边甩 */
+/** 钢管上的尺寸线：贴杆 ——557—— */
 function addOnTubeDim(group, p1, p2, text, lift, labelScale) {
-  const dimDir = new THREE.Vector3().subVectors(p2, p1);
-  const dimLen = dimDir.length();
-  if (dimLen < 1) return;
-  dimDir.multiplyScalar(1 / dimLen);
-  // 沿杆画尺寸线（几乎贴着钢管）
-  addSeg(group, p1, p2, dimMat);
-  let tick = new THREE.Vector3().crossVectors(dimDir, new THREE.Vector3(0, 1, 0)).normalize();
-  if (tick.lengthSq() < 1e-6) tick = new THREE.Vector3().crossVectors(dimDir, new THREE.Vector3(1, 0, 0)).normalize();
-  const th = 28;
-  addSeg(group, p1.clone().addScaledVector(tick, -th), p1.clone().addScaledVector(tick, th), dimMat);
-  addSeg(group, p2.clone().addScaledVector(tick, -th), p2.clone().addScaledVector(tick, th), dimMat);
-  // 文字贴在杆中点，仅轻微抬起以免陷进管壁
-  const mid = p1.clone().add(p2).multiplyScalar(0.5);
   const up = new THREE.Vector3(0, 1, 0);
-  mid.addScaledVector(up, lift || 55);
-  mid.addScaledVector(tick, 18);
-  const w = labelScale || Math.min(280, Math.max(150, dimLen * 0.12));
-  group.add(makeDimLabel(text, mid, w));
+  const a = p1.clone().addScaledVector(up, Math.max(25, (lift || 40) * 0.35));
+  const b = p2.clone().addScaledVector(up, Math.max(25, (lift || 40) * 0.35));
+  addBrokenDimLine(group, a, b, text);
 }
 
 BOXES.forEach(b => {
