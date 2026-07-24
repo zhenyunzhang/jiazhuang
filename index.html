@@ -94,7 +94,7 @@
     共5级升高280 · 顶550方平台 · 落地柱1<br/>
     床头爬梯口600不焊
   </div>
-  <p class="hint" id="hintLine">单指旋转 · 双指缩放 · 尺寸标在钢管上 · 需要时再开外形总尺</p>
+  <p class="hint" id="hintLine">单指旋转 · 双指缩放 · 关键杆尺寸线 · 点管子看下料号</p>
   <div class="btns">
     <button type="button" id="btnReset">复位</button>
     <button type="button" id="btnTube" class="secondary">杆件尺寸</button>
@@ -292,38 +292,69 @@ BOXES.forEach(b => {
   root.add(mesh);
 });
 
-/** 尺寸标在钢管本体上 */
-function addMemberDim(group, b) {
-  // 斜杆：略抬离杆面，避免字埋进斜管
+/** 尺寸线贴在钢管上（带端刻度） */
+function addMemberDim(group, b, liftExtra=0) {
   if (b.diag) {
     const p1 = toThree(b.x1, b.y1, b.z1);
     const p2 = toThree(b.x2, b.y2, b.z2);
-    addOnTubeDim(group, p1, p2, String(b.len), 70, Math.min(300, Math.max(180, b.len * 0.1)));
+    addOnTubeDim(group, p1, p2, String(b.len), 70 + liftExtra, Math.min(320, Math.max(200, b.len * 0.11)));
     return;
   }
   const p = toThree(b.cx, b.cy, b.cz);
   let axis = 'z', L = b.dz;
   if (b.dx >= b.dy && b.dx >= b.dz) { axis = 'x'; L = b.dx; }
   else if (b.dy >= b.dz) { axis = 'y'; L = b.dy; }
-  let p1, p2, lift = 50;
+  let p1, p2, lift = 52 + liftExtra;
   if (axis === 'z') {
     p1 = p.clone().add(new THREE.Vector3(0, -L/2, 0));
     p2 = p.clone().add(new THREE.Vector3(0,  L/2, 0));
-    lift = 40; // 立柱：字略偏向侧面由 tick 方向处理
+    lift = 42 + liftExtra;
   } else if (axis === 'x') {
     p1 = p.clone().add(new THREE.Vector3(-L/2, 0, 0));
     p2 = p.clone().add(new THREE.Vector3( L/2, 0, 0));
-    lift = 55;
   } else {
     p1 = p.clone().add(new THREE.Vector3(0, 0, -L/2));
     p2 = p.clone().add(new THREE.Vector3(0, 0,  L/2));
-    lift = 55;
   }
-  addOnTubeDim(group, p1, p2, String(b.len), lift, Math.min(260, Math.max(140, L * 0.12)));
+  addOnTubeDim(group, p1, p2, String(b.len), lift, Math.min(280, Math.max(160, L * 0.13)));
 }
 
-// 每根钢管：尺寸直接标在杆上
-STEELS.forEach((b) => addMemberDim(labelGroup, b));
+/** 只标关键杆：同规格不重复堆 */
+function pickKeySteels(list) {
+  const out = [];
+  const seen = new Set();
+  const want = (b, key) => {
+    if (seen.has(key)) return false;
+    seen.add(key);
+    out.push(b);
+    return true;
+  };
+  for (const b of list) {
+    const n = b.name || '';
+    if (n.includes('上床角立柱') && want(b, '床角立柱')) continue;
+    if (n.includes('上床长边梁') && want(b, '床长边')) continue;
+    if (n.includes('上床短边梁') && want(b, '床短边')) continue;
+    if (n.includes('上床横撑') && want(b, '床横撑')) continue;
+    if (n.includes('围挡前立柱') && want(b, '围挡前立')) continue;
+    if (n.includes('围挡床头立柱') && want(b, '围挡床头立')) continue;
+    if (n.includes('围挡前上横梁') && want(b, '围挡前上')) continue;
+    if (n.includes('围挡前下横梁') && want(b, '围挡前下')) continue;
+    if (n.includes('围挡床头上横梁') && want(b, '围挡床头上')) continue;
+    if (n.includes('围挡床头下横梁') && want(b, '围挡床头下')) continue;
+    if (n.includes('楼梯斜杆外侧') && want(b, '斜杆')) continue;
+    if (/踏步1竖杆/.test(n) && want(b, '踏步竖杆')) continue;
+    if (/踏步1外口横杆/.test(n) && want(b, '踏步外口')) continue;
+    if (/踏步1内口横杆/.test(n) && want(b, '踏步内口')) continue;
+    if (/踏步1左边杆/.test(n) && want(b, '踏步边杆')) continue;
+    if (n.includes('平台外沿梁') && want(b, '平台外沿')) continue;
+    if (n.includes('平台靠墙梁') && want(b, '平台靠墙')) continue;
+    if (n.includes('平台中撑') && want(b, '平台中撑')) continue;
+    if (n.includes('平台落地立柱') && want(b, '落地柱')) continue;
+  }
+  return out;
+}
+
+pickKeySteels(STEELS).forEach((b) => addMemberDim(labelGroup, b));
 
 // 外形总尺：只保留总轮廓，并拉开位置（不堆在楼梯斜杆旁）
 addCadDim(overallGroup, toThree(0,0,0), toThree(2200,0,0), '床长 2200', new THREE.Vector3(0, 0, -380));
