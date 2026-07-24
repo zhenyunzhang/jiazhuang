@@ -167,20 +167,41 @@ const labelGroup = new THREE.Group();
 const overallGroup = new THREE.Group();
 scene.add(root); scene.add(labelGroup); scene.add(overallGroup);
 
-function makeLabel(text, pos, scale=300) {
+function makeLabel(text, pos, _worldScale=300) {
+  const dpr = Math.min(devicePixelRatio || 1, 2);
   const canvas = document.createElement('canvas');
-  canvas.width = 320; canvas.height = 72;
+  canvas.width = 640 * dpr; canvas.height = 160 * dpr;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = 'rgba(10,12,16,0.78)';
-  roundRect(ctx, 8, 12, 304, 48, 10); ctx.fill();
-  ctx.strokeStyle = 'rgba(255,210,122,0.6)'; ctx.lineWidth = 2; ctx.stroke();
-  ctx.fillStyle = '#ffe6a8'; ctx.font = '700 26px sans-serif';
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, 640, 160);
+  // 更大底框 + 描边，手机远看也清晰
+  ctx.fillStyle = 'rgba(8,10,14,0.88)';
+  roundRect(ctx, 12, 28, 616, 104, 18); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,210,122,0.85)'; ctx.lineWidth = 4; ctx.stroke();
+  ctx.fillStyle = '#ffe6a8';
+  ctx.font = '800 56px "PingFang SC","Helvetica Neue",sans-serif';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(text, 160, 36);
+  // 过长文字略缩小
+  const maxW = 560;
+  let fontSize = 56;
+  while (fontSize > 34 && ctx.measureText(text).width > maxW) {
+    fontSize -= 2;
+    ctx.font = `800 ${fontSize}px "PingFang SC","Helvetica Neue",sans-serif`;
+  }
+  ctx.fillText(text, 320, 80);
   const tex = new THREE.CanvasTexture(canvas);
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: true }));
-  sp.scale.set(scale, scale * 0.225, 1);
+  tex.anisotropy = 4;
+  tex.needsUpdate = true;
+  // 关闭透视衰减：屏幕上大小基本恒定，关键标注不再糊成一点
+  const mat = new THREE.SpriteMaterial({
+    map: tex, transparent: true, depthTest: false, depthWrite: false,
+    sizeAttenuation: false,
+  });
+  const sp = new THREE.Sprite(mat);
+  const w = isMobile ? 0.42 : 0.28;
+  sp.scale.set(w, w * 0.25, 1);
   sp.position.copy(pos);
+  sp.renderOrder = 10;
   return sp;
 }
 function roundRect(ctx,x,y,w,h,r){
