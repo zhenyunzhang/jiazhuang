@@ -94,11 +94,11 @@
     共5级升高280 · 顶550方平台 · 落地柱1<br/>
     床头爬梯口600不焊
   </div>
-  <p class="hint" id="hintLine">单指旋转 · 双指缩放 · 点管子看下料</p>
+  <p class="hint" id="hintLine">单指旋转 · 双指缩放 · 点管子看下料 · 尺寸为CAD引出线</p>
   <div class="btns">
     <button type="button" id="btnReset">复位</button>
-    <button type="button" id="btnTube" class="secondary">关键尺寸</button>
-    <button type="button" id="btnOverall" class="secondary">总尺寸线</button>
+    <button type="button" id="btnOverall" class="secondary">外形尺寸</button>
+    <button type="button" id="btnTube" class="secondary">杆件标尺</button>
   </div>
   <div id="listWrap"><div id="list"></div></div>
   </div>
@@ -163,51 +163,78 @@ function toThree(x, y, z) { return new THREE.Vector3(x, z, y); }
 
 const root = new THREE.Group();
 const meshById = new Map();
-const labelGroup = new THREE.Group();
-const overallGroup = new THREE.Group();
+const labelGroup = new THREE.Group();   // 杆件标尺（默认关）
+const overallGroup = new THREE.Group(); // 外形 CAD 尺寸（默认开）
 scene.add(root); scene.add(labelGroup); scene.add(overallGroup);
 
-function makeLabel(text, pos, _worldScale=300) {
-  const dpr = Math.min(devicePixelRatio || 1, 2);
-  const canvas = document.createElement('canvas');
-  canvas.width = 640 * dpr; canvas.height = 160 * dpr;
-  const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
-  ctx.clearRect(0, 0, 640, 160);
-  // 更大底框 + 描边，手机远看也清晰
-  ctx.fillStyle = 'rgba(8,10,14,0.88)';
-  roundRect(ctx, 12, 28, 616, 104, 18); ctx.fill();
-  ctx.strokeStyle = 'rgba(255,210,122,0.85)'; ctx.lineWidth = 4; ctx.stroke();
-  ctx.fillStyle = '#ffe6a8';
-  ctx.font = '800 56px "PingFang SC","Helvetica Neue",sans-serif';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  // 过长文字略缩小
-  const maxW = 560;
-  let fontSize = 56;
-  while (fontSize > 34 && ctx.measureText(text).width > maxW) {
-    fontSize -= 2;
-    ctx.font = `800 ${fontSize}px "PingFang SC","Helvetica Neue",sans-serif`;
-  }
-  ctx.fillText(text, 320, 80);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.anisotropy = 4;
-  tex.needsUpdate = true;
-  // 关闭透视衰减：屏幕上大小基本恒定，关键标注不再糊成一点
-  const mat = new THREE.SpriteMaterial({
-    map: tex, transparent: true, depthTest: false, depthWrite: false,
-    sizeAttenuation: false,
-  });
-  const sp = new THREE.Sprite(mat);
-  const w = isMobile ? 0.42 : 0.28;
-  sp.scale.set(w, w * 0.25, 1);
-  sp.position.copy(pos);
-  sp.renderOrder = 10;
-  return sp;
-}
+const dimMat = new THREE.LineBasicMaterial({ color: 0xffc857 });
+const dimExtMat = new THREE.LineBasicMaterial({ color: 0x8a7340 });
+
 function roundRect(ctx,x,y,w,h,r){
   ctx.beginPath();
   ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
   ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+
+/** CAD 尺寸文字：贴在尺寸线旁，随模型缩放 */
+function makeDimLabel(text, pos, worldW=420) {
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  const canvas = document.createElement('canvas');
+  canvas.width = 512 * dpr; canvas.height = 128 * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, 512, 128);
+  ctx.fillStyle = 'rgba(12,14,18,0.82)';
+  roundRect(ctx, 8, 20, 496, 88, 12); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,200,87,0.9)'; ctx.lineWidth = 3; ctx.stroke();
+  ctx.fillStyle = '#ffe6a8';
+  ctx.font = '700 44px "PingFang SC","Helvetica Neue",sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  let fs = 44;
+  while (fs > 28 && ctx.measureText(text).width > 460) {
+    fs -= 2; ctx.font = `700 ${fs}px "PingFang SC","Helvetica Neue",sans-serif`;
+  }
+  ctx.fillText(text, 256, 64);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.needsUpdate = true;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: tex, transparent: true, depthTest: true, depthWrite: false,
+    sizeAttenuation: true,
+  }));
+  sp.scale.set(worldW, worldW * 0.25, 1);
+  sp.position.copy(pos);
+  sp.renderOrder = 2;
+  return sp;
+}
+
+function addSeg(group, a, b, mat) {
+  group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), mat));
+}
+
+/** CAD 尺寸：测量 p1–p2，沿 offset 外移 */
+function addCadDim(group, p1, p2, text, offset, labelScale) {
+  const o = offset.clone();
+  const a = p1.clone().add(o);
+  const b = p2.clone().add(o);
+  const dimDir = new THREE.Vector3().subVectors(b, a);
+  const dimLen = dimDir.length();
+  if (dimLen < 1) return;
+  dimDir.multiplyScalar(1 / dimLen);
+  const over = o.clone().normalize().multiplyScalar(36);
+  addSeg(group, p1, a.clone().add(over), dimExtMat);
+  addSeg(group, p2, b.clone().add(over), dimExtMat);
+  addSeg(group, a, b, dimMat);
+  let tick = new THREE.Vector3().crossVectors(dimDir, o).normalize();
+  if (tick.lengthSq() < 1e-6) {
+    tick = new THREE.Vector3().crossVectors(dimDir, new THREE.Vector3(0, 1, 0)).normalize();
+  }
+  if (tick.lengthSq() < 1e-6) tick.set(1, 0, 0);
+  const th = 55;
+  addSeg(group, a.clone().addScaledVector(tick, -th), a.clone().addScaledVector(tick, th), dimMat);
+  addSeg(group, b.clone().addScaledVector(tick, -th), b.clone().addScaledVector(tick, th), dimMat);
+  const mid = a.clone().add(b).multiplyScalar(0.5).add(o.clone().normalize().multiplyScalar(70));
+  const w = labelScale || Math.min(520, Math.max(280, dimLen * 0.22));
+  group.add(makeDimLabel(text, mid, w));
 }
 
 BOXES.forEach(b => {
@@ -237,35 +264,40 @@ BOXES.forEach(b => {
   if (b.kind === 'steel') {
     mesh.castShadow = !isMobile;
     meshById.set(b.id, mesh);
-    if (b.showLabel) {
-      labelGroup.add(makeLabel(String(b.len), toThree(b.cx, b.cy, b.cz + 40), b.len >= 1000 ? 360 : 280));
+    if (b.showLabel && !b.diag) {
+      const p = toThree(b.cx, b.cy, b.cz);
+      const axis = b.dx >= b.dy && b.dx >= b.dz ? 'x' : (b.dy >= b.dz ? 'y' : 'z');
+      let p1, p2, off;
+      if (axis === 'z') {
+        p1 = p.clone().add(new THREE.Vector3(0, -b.dz/2, 0));
+        p2 = p.clone().add(new THREE.Vector3(0,  b.dz/2, 0));
+        off = new THREE.Vector3(120, 0, 120);
+      } else if (axis === 'x') {
+        p1 = p.clone().add(new THREE.Vector3(-b.dx/2, 0, 0));
+        p2 = p.clone().add(new THREE.Vector3( b.dx/2, 0, 0));
+        off = new THREE.Vector3(0, 100, -120);
+      } else {
+        p1 = p.clone().add(new THREE.Vector3(0, 0, -b.dy/2));
+        p2 = p.clone().add(new THREE.Vector3(0, 0,  b.dy/2));
+        off = new THREE.Vector3(120, 80, 0);
+      }
+      addCadDim(labelGroup, p1, p2, String(b.len), off, Math.min(400, Math.max(240, b.len * 0.18)));
     }
   } else if (b.kind === 'marker') {
     meshById.set(b.id, mesh);
-    labelGroup.add(makeLabel('爬梯口600', toThree(b.cx, b.cy + 60, b.cz + 80), 340));
   }
   root.add(mesh);
 });
 
-function addDimLine(a, b, color=0xffcc66) {
-  overallGroup.add(new THREE.Line(
-    new THREE.BufferGeometry().setFromPoints([a,b]),
-    new THREE.LineBasicMaterial({ color })
-  ));
-}
-[
-  { a:[0,0,0], b:[2200,0,0], t:'床长2200', m:[1100,-150,0] },
-  { a:[0,0,0], b:[0,1200,0], t:'床宽1200', m:[-150,600,0] },
-  { a:[0,0,0], b:[0,0,1400], t:'净高1400', m:[-180,-180,700] },
-  { a:[2200,0,0], b:[2750,0,0], t:'梯宽550', m:[2475,-120,0] },
-  { a:[2200,550,0], b:[2200,1800,0], t:'水平投影1800', m:[2050,1175,0] },
-  { a:[2750,1800,0], b:[2750,550,1400], t:'斜杆~DIAG', m:[2950,1100,700] },
-  { a:[2750,550,0], b:[2750,550,1460], t:'落地柱', m:[2920,550,730] },
-  { a:[0,1200,1800], b:[600,1200,1800], t:'爬梯口600', m:[300,1350,1900] },
-].forEach(d => {
-  addDimLine(toThree(...d.a), toThree(...d.b));
-  overallGroup.add(makeLabel(d.t.replace('DIAG', String(1877)), toThree(...d.m), 340));
-});
+// 外形尺寸：少量关键 CAD，避免飘浮数字堆叠
+addCadDim(overallGroup, toThree(0,0,0), toThree(2200,0,0), '床长 2200', new THREE.Vector3(0, 0, -220));
+addCadDim(overallGroup, toThree(0,0,0), toThree(0,1200,0), '床宽 1200', new THREE.Vector3(-220, 0, 0));
+addCadDim(overallGroup, toThree(0,0,0), toThree(0,0,1400), '净高 1400', new THREE.Vector3(-280, 0, -280));
+addCadDim(overallGroup, toThree(2200,0,0), toThree(2750,0,0), '梯宽 550', new THREE.Vector3(0, 0, -200));
+addCadDim(overallGroup, toThree(2750,1800,0), toThree(2750,550,0), '斜杆投影 1250', new THREE.Vector3(220, 0, 0));
+addCadDim(overallGroup, toThree(2750,1800,0), toThree(2750,550,1400), `斜杆 ${1877}`, new THREE.Vector3(320, 0, 0));
+addCadDim(overallGroup, toThree(2750,550,0), toThree(2750,550,1460), '落地柱 1460', new THREE.Vector3(200, 0, 160));
+addCadDim(overallGroup, toThree(0,1200,1460), toThree(600,1200,1460), '爬梯口 600', new THREE.Vector3(0, 160, 200));
 
 const listEl = document.getElementById('list');
 const totalLen = STEELS.reduce((s,b)=>s+b.len, 0);
@@ -343,7 +375,8 @@ document.getElementById('btnReset').onclick=()=>{
 };
 document.getElementById('btnTube').onclick=()=>{ labelGroup.visible=!labelGroup.visible; };
 document.getElementById('btnOverall').onclick=()=>{ overallGroup.visible=!overallGroup.visible; };
-overallGroup.visible = !isMobile; // 手机默认关掉总尺寸线，画面更干净
+labelGroup.visible = false;   // 杆件标尺默认关，避免堆叠
+overallGroup.visible = true;  // 外形 CAD 尺寸默认开
 
 function onResize(){
   camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
