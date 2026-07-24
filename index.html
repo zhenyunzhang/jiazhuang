@@ -94,11 +94,11 @@
     共5级升高280 · 顶550方平台 · 落地柱1<br/>
     床头爬梯口600不焊
   </div>
-  <p class="hint" id="hintLine">单指旋转 · 双指缩放 · 点管子看下料 · 尺寸为CAD引出线</p>
+  <p class="hint" id="hintLine">单指旋转 · 双指缩放 · 点管子看下料 · 尺寸线贴在钢管上</p>
   <div class="btns">
     <button type="button" id="btnReset">复位</button>
-    <button type="button" id="btnOverall" class="secondary">外形尺寸</button>
-    <button type="button" id="btnTube" class="secondary">杆件标尺</button>
+    <button type="button" id="btnTube" class="secondary">杆件尺寸</button>
+    <button type="button" id="btnOverall" class="secondary">外形总尺</button>
   </div>
   <div id="listWrap"><div id="list"></div></div>
   </div>
@@ -264,43 +264,70 @@ BOXES.forEach(b => {
   if (b.kind === 'steel') {
     mesh.castShadow = !isMobile;
     meshById.set(b.id, mesh);
-    if (b.showLabel && !b.diag) {
-      const p = toThree(b.cx, b.cy, b.cz);
-      const axis = b.dx >= b.dy && b.dx >= b.dz ? 'x' : (b.dy >= b.dz ? 'y' : 'z');
-      let p1, p2, off;
-      if (axis === 'z') {
-        p1 = p.clone().add(new THREE.Vector3(0, -b.dz/2, 0));
-        p2 = p.clone().add(new THREE.Vector3(0,  b.dz/2, 0));
-        off = new THREE.Vector3(120, 0, 120);
-      } else if (axis === 'x') {
-        p1 = p.clone().add(new THREE.Vector3(-b.dx/2, 0, 0));
-        p2 = p.clone().add(new THREE.Vector3( b.dx/2, 0, 0));
-        off = new THREE.Vector3(0, 100, -120);
-      } else {
-        p1 = p.clone().add(new THREE.Vector3(0, 0, -b.dy/2));
-        p2 = p.clone().add(new THREE.Vector3(0, 0,  b.dy/2));
-        off = new THREE.Vector3(120, 80, 0);
-      }
-      addCadDim(labelGroup, p1, p2, String(b.len), off, Math.min(400, Math.max(240, b.len * 0.18)));
-    }
   } else if (b.kind === 'marker') {
     meshById.set(b.id, mesh);
   }
   root.add(mesh);
 });
 
-// 外形尺寸：少量关键 CAD（床宽、楼梯进深单独拉出，避免看不清）
-addCadDim(overallGroup, toThree(0,0,0), toThree(2200,0,0), '床长 2200', new THREE.Vector3(0, 0, -220));
-addCadDim(overallGroup, toThree(0,0,0), toThree(0,1200,0), '床宽 1200', new THREE.Vector3(-280, 0, 0));
-addCadDim(overallGroup, toThree(2200,0,0), toThree(2200,1200,0), '床宽 1200', new THREE.Vector3(260, 0, 0));
-addCadDim(overallGroup, toThree(0,0,0), toThree(0,0,1400), '净高 1400', new THREE.Vector3(-280, 0, -280));
-addCadDim(overallGroup, toThree(2200,0,0), toThree(2750,0,0), '梯宽 550', new THREE.Vector3(0, 0, -200));
-// 楼梯进深：靠墙→楼梯外端（设计值 1800）
-addCadDim(overallGroup, toThree(2750,0,0), toThree(2750,1800,0), '楼梯进深 1800', new THREE.Vector3(260, 0, 0));
-addCadDim(overallGroup, toThree(2750,1800,0), toThree(2750,550,0), '斜杆投影 1250', new THREE.Vector3(420, 0, 0));
-addCadDim(overallGroup, toThree(2750,1800,0), toThree(2750,550,1400), `斜杆 ${1877}`, new THREE.Vector3(520, 80, 0));
-addCadDim(overallGroup, toThree(2750,550,0), toThree(2750,550,1460), '落地柱 1460', new THREE.Vector3(200, 0, 160));
-addCadDim(overallGroup, toThree(0,1200,1460), toThree(600,1200,1460), '爬梯口 600', new THREE.Vector3(0, 160, 200));
+/** 尺寸线贴钢管：沿杆件长度，偏移在杆旁 */
+function addMemberDim(group, b, sideSign) {
+  const dist = 85 + Math.min(40, b.len * 0.02);
+  const s = sideSign >= 0 ? 1 : -1;
+  const mag = Math.abs(sideSign) || 1;
+  if (b.diag) {
+    const p1 = toThree(b.x1, b.y1, b.z1);
+    const p2 = toThree(b.x2, b.y2, b.z2);
+    const dir = p2.clone().sub(p1).normalize();
+    let off = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(0, 1, 0));
+    if (off.lengthSq() < 1e-6) off.crossVectors(dir, new THREE.Vector3(1, 0, 0));
+    off.normalize().multiplyScalar(dist * 1.4 * s * mag);
+    off.y += 50 * s;
+    addCadDim(group, p1, p2, String(b.len), off, Math.min(320, Math.max(200, b.len * 0.12)));
+    return;
+  }
+  const p = toThree(b.cx, b.cy, b.cz);
+  // BoxGeometry(dx,dz,dy)：最长边决定测量轴
+  let axis = 'z', L = b.dz;
+  if (b.dx >= b.dy && b.dx >= b.dz) { axis = 'x'; L = b.dx; }
+  else if (b.dy >= b.dz) { axis = 'y'; L = b.dy; }
+  let p1, p2, off;
+  if (axis === 'z') {
+    p1 = p.clone().add(new THREE.Vector3(0, -L/2, 0));
+    p2 = p.clone().add(new THREE.Vector3(0,  L/2, 0));
+    off = new THREE.Vector3(dist * s * mag, 0, dist * 0.55 * s);
+  } else if (axis === 'x') {
+    p1 = p.clone().add(new THREE.Vector3(-L/2, 0, 0));
+    p2 = p.clone().add(new THREE.Vector3( L/2, 0, 0));
+    off = new THREE.Vector3(0, dist * 0.65 * mag, -dist * s);
+  } else {
+    p1 = p.clone().add(new THREE.Vector3(0, 0, -L/2));
+    p2 = p.clone().add(new THREE.Vector3(0, 0,  L/2));
+    off = new THREE.Vector3(dist * s * mag, dist * 0.45, 0);
+  }
+  addCadDim(group, p1, p2, String(b.len), off, Math.min(300, Math.max(160, L * 0.14)));
+}
+
+// 每根钢管绑定一根尺寸线（左右交错，减少重叠）
+STEELS.forEach((b, i) => {
+  let side = (i % 2 === 0) ? 1 : -1;
+  if (b.name.includes('横撑')) side *= 1.35;
+  if (b.name.includes('围挡')) side *= 1.25;
+  if (b.name.includes('踏步')) side *= 0.75;
+  if (b.name.includes('斜杆')) side *= 1.6;
+  addMemberDim(labelGroup, b, side);
+});
+
+// 外形总尺：只保留总轮廓，并拉开位置（不堆在楼梯斜杆旁）
+addCadDim(overallGroup, toThree(0,0,0), toThree(2200,0,0), '床长 2200', new THREE.Vector3(0, 0, -380));
+addCadDim(overallGroup, toThree(0,0,0), toThree(0,1200,0), '床宽 1200', new THREE.Vector3(-380, 0, 0));
+addCadDim(overallGroup, toThree(0,0,0), toThree(0,0,1400), '净高 1400', new THREE.Vector3(-420, 0, -420));
+// 梯宽放在楼梯外端地面（Y=1800），离开斜杆簇
+addCadDim(overallGroup, toThree(2200,1800,0), toThree(2750,1800,0), '梯宽 550', new THREE.Vector3(0, 0, 320));
+// 楼梯进深放在楼梯外侧更远处
+addCadDim(overallGroup, toThree(2750,0,0), toThree(2750,1800,0), '楼梯进深 1800', new THREE.Vector3(480, 0, 0));
+// 爬梯口在床头围挡附近
+addCadDim(overallGroup, toThree(0,1200,1460), toThree(600,1200,1460), '爬梯口 600', new THREE.Vector3(0, 200, 280));
 
 const listEl = document.getElementById('list');
 const totalLen = STEELS.reduce((s,b)=>s+b.len, 0);
@@ -378,8 +405,8 @@ document.getElementById('btnReset').onclick=()=>{
 };
 document.getElementById('btnTube').onclick=()=>{ labelGroup.visible=!labelGroup.visible; };
 document.getElementById('btnOverall').onclick=()=>{ overallGroup.visible=!overallGroup.visible; };
-labelGroup.visible = false;   // 杆件标尺默认关，避免堆叠
-overallGroup.visible = true;  // 外形 CAD 尺寸默认开
+labelGroup.visible = true;   // 杆件尺寸：每根钢管绑定
+overallGroup.visible = true;  // 外形总尺：拉开布置
 
 function onResize(){
   camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
