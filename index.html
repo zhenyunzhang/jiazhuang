@@ -289,13 +289,16 @@ BOXES.forEach(b => {
   root.add(mesh);
 });
 
-// 外形尺寸：少量关键 CAD，避免飘浮数字堆叠
+// 外形尺寸：少量关键 CAD（床宽、楼梯进深单独拉出，避免看不清）
 addCadDim(overallGroup, toThree(0,0,0), toThree(2200,0,0), '床长 2200', new THREE.Vector3(0, 0, -220));
-addCadDim(overallGroup, toThree(0,0,0), toThree(0,1200,0), '床宽 1200', new THREE.Vector3(-220, 0, 0));
+addCadDim(overallGroup, toThree(0,0,0), toThree(0,1200,0), '床宽 1200', new THREE.Vector3(-280, 0, 0));
+addCadDim(overallGroup, toThree(2200,0,0), toThree(2200,1200,0), '床宽 1200', new THREE.Vector3(260, 0, 0));
 addCadDim(overallGroup, toThree(0,0,0), toThree(0,0,1400), '净高 1400', new THREE.Vector3(-280, 0, -280));
 addCadDim(overallGroup, toThree(2200,0,0), toThree(2750,0,0), '梯宽 550', new THREE.Vector3(0, 0, -200));
-addCadDim(overallGroup, toThree(2750,1800,0), toThree(2750,550,0), '斜杆投影 1250', new THREE.Vector3(220, 0, 0));
-addCadDim(overallGroup, toThree(2750,1800,0), toThree(2750,550,1400), `斜杆 ${1877}`, new THREE.Vector3(320, 0, 0));
+// 楼梯进深：靠墙→楼梯外端（设计值 1800）
+addCadDim(overallGroup, toThree(2750,0,0), toThree(2750,1800,0), '楼梯进深 1800', new THREE.Vector3(260, 0, 0));
+addCadDim(overallGroup, toThree(2750,1800,0), toThree(2750,550,0), '斜杆投影 1250', new THREE.Vector3(420, 0, 0));
+addCadDim(overallGroup, toThree(2750,1800,0), toThree(2750,550,1400), `斜杆 ${1877}`, new THREE.Vector3(520, 80, 0));
 addCadDim(overallGroup, toThree(2750,550,0), toThree(2750,550,1460), '落地柱 1460', new THREE.Vector3(200, 0, 160));
 addCadDim(overallGroup, toThree(0,1200,1460), toThree(600,1200,1460), '爬梯口 600', new THREE.Vector3(0, 160, 200));
 
