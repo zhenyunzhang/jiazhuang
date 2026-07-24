@@ -169,7 +169,7 @@ scene.add(root); scene.add(labelGroup); scene.add(overallGroup);
 
 const dimMeshMat = new THREE.MeshBasicMaterial({ color: 0xffc857, depthWrite: false, depthTest: true });
 const dimExtMeshMat = new THREE.MeshBasicMaterial({ color: 0xd4a84b, depthWrite: false, depthTest: true });
-const DIM_T = 10; // 尺寸线截面，WebGL 细线看不见，用方条代替
+const DIM_T = 3.5; // 细尺寸线（方条模拟，避免 WebGL 细线不可见）
 
 function addBar(group, a, b, mat, thick=DIM_T) {
   const dir = new THREE.Vector3().subVectors(b, a);
@@ -182,7 +182,7 @@ function addBar(group, a, b, mat, thick=DIM_T) {
   group.add(mesh);
 }
 
-/** 纯数字（无方格），屏幕恒定大小，一进页就能看清 */
+/** 纯数字（无方格），屏幕恒定大小，细小可读 */
 function makeDimText(text, pos) {
   const dpr = Math.min(devicePixelRatio || 1, 2);
   const canvas = document.createElement('canvas');
@@ -190,13 +190,13 @@ function makeDimText(text, pos) {
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
   ctx.clearRect(0, 0, 320, 96);
-  ctx.font = '800 54px "PingFang SC","Helvetica Neue",sans-serif';
+  ctx.font = '600 36px "PingFang SC","Helvetica Neue",sans-serif';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  let fs = 54;
-  while (fs > 28 && ctx.measureText(text).width > 290) {
-    fs -= 2; ctx.font = `800 ${fs}px "PingFang SC","Helvetica Neue",sans-serif`;
+  let fs = 36;
+  while (fs > 24 && ctx.measureText(text).width > 290) {
+    fs -= 2; ctx.font = `600 ${fs}px "PingFang SC","Helvetica Neue",sans-serif`;
   }
-  ctx.lineWidth = 7; ctx.strokeStyle = 'rgba(8,10,14,0.9)';
+  ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,10,14,0.85)';
   ctx.strokeText(text, 160, 48);
   ctx.fillStyle = '#ffe08a';
   ctx.fillText(text, 160, 48);
@@ -206,7 +206,7 @@ function makeDimText(text, pos) {
     map: tex, transparent: true, depthTest: false, depthWrite: false,
     sizeAttenuation: false,
   }));
-  const w = isMobile ? 0.22 : 0.16;
+  const w = isMobile ? 0.11 : 0.08;
   sp.scale.set(w, w * 0.3, 1);
   sp.position.copy(pos);
   sp.renderOrder = 20;
@@ -215,7 +215,7 @@ function makeDimText(text, pos) {
 
 function gapForText(text, dimLen) {
   const n = String(text).replace(/\s/g,'').length;
-  return Math.min(dimLen * 0.4, Math.max(90, n * 55));
+  return Math.min(dimLen * 0.32, Math.max(55, n * 36));
 }
 
 /** 标准 CAD：引出线 + 尺寸线中间断开写数字 ——557—— */
@@ -229,25 +229,25 @@ function addCadDim(group, p1, p2, text, offset) {
   if (dimLen < 1) return;
   dimDir.multiplyScalar(1 / dimLen);
   // 引出线（构件端点 → 尺寸线）
-  addBar(group, p1, a, dimExtMeshMat, 7);
-  addBar(group, p2, b, dimExtMeshMat, 7);
+  addBar(group, p1, a, dimExtMeshMat, 2.5);
+  addBar(group, p2, b, dimExtMeshMat, 2.5);
   // 尺寸线两段 + 中间缺口
   const mid = a.clone().add(b).multiplyScalar(0.5);
   const gap = gapForText(text, dimLen);
   const g0 = mid.clone().addScaledVector(dimDir, -gap/2);
   const g1 = mid.clone().addScaledVector(dimDir,  gap/2);
-  if (a.distanceTo(g0) > 15) addBar(group, a, g0, dimMeshMat);
-  if (g1.distanceTo(b) > 15) addBar(group, g1, b, dimMeshMat);
+  if (a.distanceTo(g0) > 12) addBar(group, a, g0, dimMeshMat);
+  if (g1.distanceTo(b) > 12) addBar(group, g1, b, dimMeshMat);
   // 端刻度
   let tick = new THREE.Vector3().crossVectors(dimDir, o).normalize();
   if (tick.lengthSq() < 1e-6) {
     tick = new THREE.Vector3().crossVectors(dimDir, new THREE.Vector3(0,1,0)).normalize();
   }
   if (tick.lengthSq() < 1e-6) tick.set(1,0,0);
-  const th = 55;
-  addBar(group, a.clone().addScaledVector(tick,-th), a.clone().addScaledVector(tick,th), dimMeshMat, 8);
-  addBar(group, b.clone().addScaledVector(tick,-th), b.clone().addScaledVector(tick,th), dimMeshMat, 8);
-  group.add(makeDimText(text, mid.clone().addScaledVector(o.clone().normalize(), 35)));
+  const th = 28;
+  addBar(group, a.clone().addScaledVector(tick,-th), a.clone().addScaledVector(tick,th), dimMeshMat, 3);
+  addBar(group, b.clone().addScaledVector(tick,-th), b.clone().addScaledVector(tick,th), dimMeshMat, 3);
+  group.add(makeDimText(text, mid.clone().addScaledVector(o.clone().normalize(), 28)));
 }
 
 /** 给一根钢管做 CAD 尺寸（外偏，一眼能看见） */
@@ -321,36 +321,34 @@ const dimSpecs = [
     off: new THREE.Vector3(-160, 120, 0) },
   { b: byName(S, b => b.name === '上床横撑1'),
     off: new THREE.Vector3(0, 130, 0) },
-  // 围挡：前边最上沿
-  { b: byName(S, b => b.name.includes('围挡前立柱@600')),
-    off: new THREE.Vector3(0, 0, 150) },
+  // 围挡：只留更显眼的上横梁（去掉前立柱，减少与竖向尺寸抢视线）
   { b: byName(S, b => b.name.includes('围挡前上横梁')),
-    off: new THREE.Vector3(0, 130, 150) },
+    off: new THREE.Vector3(0, 140, 180) },
   { b: byName(S, b => b.name.includes('围挡床头上横梁')),
-    off: new THREE.Vector3(-150, 120, 0) },
-  // 楼梯：外侧斜杆 + 一级踏步外口（朝外）
+    off: new THREE.Vector3(-180, 130, 0) },
+  // 楼梯：再往外侧挪，避免斜杆/踏步挤在一起
   { b: byName(S, b => b.name.includes('楼梯斜杆外侧')),
-    off: new THREE.Vector3(180, 40, 0) },
+    off: new THREE.Vector3(260, 60, 40) },
   { b: byName(S, b => b.name === '踏步1竖杆外'),
-    off: new THREE.Vector3(140, 0, 80) },
+    off: new THREE.Vector3(220, 0, 140) },
   { b: byName(S, b => b.name === '踏步1外口横杆'),
-    off: new THREE.Vector3(0, 100, 120) },
+    off: new THREE.Vector3(40, 120, 200) },
   { b: byName(S, b => b.name === '踏步1右边杆'),
-    off: new THREE.Vector3(130, 80, 0) },
+    off: new THREE.Vector3(200, 100, 60) },
   // 平台
   { b: byName(S, b => b.name.includes('平台外沿梁')),
-    off: new THREE.Vector3(0, 120, 140) },
+    off: new THREE.Vector3(0, 120, 160) },
   { b: byName(S, b => b.name.includes('平台落地立柱')),
-    off: new THREE.Vector3(150, 0, 120) },
+    off: new THREE.Vector3(180, 0, 140) },
 ];
 dimSpecs.forEach(({b, off}) => { if (b) addMemberCad(labelGroup, b, off); });
 
-// 外形总尺（可选）：默认开，放在一眼可见位置
-addCadDim(overallGroup, toThree(0,0,0), toThree(2200,0,0), '2200', new THREE.Vector3(0, 0, -320));
-addCadDim(overallGroup, toThree(0,0,0), toThree(0,1200,0), '1200', new THREE.Vector3(-320, 0, 0));
-addCadDim(overallGroup, toThree(0,0,0), toThree(0,0,1400), '1400', new THREE.Vector3(-360, 0, -360));
-addCadDim(overallGroup, toThree(2200,1800,0), toThree(2750,1800,0), '550', new THREE.Vector3(0, 0, 280));
-addCadDim(overallGroup, toThree(2750,0,0), toThree(2750,1800,0), '1800', new THREE.Vector3(360, 0, 0));
+// 外形总尺：线/字已变细；靠墙床长再拉远一点减少被挡
+addCadDim(overallGroup, toThree(0,0,0), toThree(2200,0,0), '2200', new THREE.Vector3(0, 0, -420));
+addCadDim(overallGroup, toThree(0,0,0), toThree(0,1200,0), '1200', new THREE.Vector3(-360, 0, 0));
+addCadDim(overallGroup, toThree(0,0,0), toThree(0,0,1400), '1400', new THREE.Vector3(-400, 0, -400));
+addCadDim(overallGroup, toThree(2200,1800,0), toThree(2750,1800,0), '550', new THREE.Vector3(0, 0, 300));
+addCadDim(overallGroup, toThree(2750,0,0), toThree(2750,1800,0), '1800', new THREE.Vector3(400, 0, 0));
 
 const listEl = document.getElementById('list');
 const totalLen = STEELS.reduce((s,b)=>s+b.len, 0);
