@@ -2,18 +2,29 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>儿童房上床+双斜杆楼梯 · 可旋转3D</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<title>儿童房上床+抽屉踏步楼梯 · 可旋转3D</title>
 <style>
-  html, body { margin:0; height:100%; background:#1a1d21; color:#eee;
-    font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif; overflow:hidden; }
+  html, body { margin:0; height:100%; height:100dvh; background:#1a1d21; color:#eee;
+    font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif; overflow:hidden;
+    touch-action: none; -webkit-text-size-adjust: 100%; }
+  canvas { display:block; touch-action: none; }
   #ui {
     position:absolute; left:12px; top:12px; z-index:2;
-    background:rgba(20,22,26,.9); border:1px solid rgba(255,255,255,.08);
-    border-radius:12px; padding:12px 14px; width:330px; max-height:calc(100vh - 24px);
+    background:rgba(20,22,26,.92); border:1px solid rgba(255,255,255,.08);
+    border-radius:12px; padding:12px 14px; width:min(330px, calc(100vw - 24px));
+    max-height:calc(100vh - 24px); max-height:calc(100dvh - 24px);
     display:flex; flex-direction:column; box-sizing:border-box;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   }
-  #ui h1 { margin:0 0 6px; font-size:14px; font-weight:600; }
+  #uiHeader { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+  #ui h1 { margin:0 0 6px; font-size:14px; font-weight:600; flex:1; }
+  #btnToggle {
+    flex:0 0 auto; min-width:44px; min-height:32px; padding:6px 10px;
+    background:#3a3f46; color:#fff; border:0; border-radius:8px; font-size:12px;
+  }
   #ui .meta { margin:0 0 4px; font-size:11px; color:#b8c0c8; }
   #ui .note {
     margin:8px 0; padding:8px 10px; border-radius:8px;
@@ -23,49 +34,73 @@
   #ui .btns { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
   #ui button {
     cursor:pointer; background:#3d6f8a; color:#fff; border:0; border-radius:8px;
-    padding:6px 10px; font-size:11px;
+    padding:8px 12px; font-size:12px; min-height:36px;
   }
   #ui button.secondary { background:#3a3f46; }
-  #listWrap { overflow:auto; flex:1; min-height:80px; border-top:1px solid rgba(255,255,255,.08); padding-top:8px; }
+  #uiBody { display:flex; flex-direction:column; min-height:0; flex:1; overflow:hidden; }
+  #listWrap { overflow:auto; flex:1; min-height:80px; border-top:1px solid rgba(255,255,255,.08); padding-top:8px;
+    -webkit-overflow-scrolling: touch; touch-action: pan-y; }
   #list { font-size:11px; line-height:1.35; }
   #list .row {
     display:grid; grid-template-columns:42px 52px 1fr; gap:4px;
-    padding:4px; border-radius:6px; cursor:pointer; color:#c5ccd3;
+    padding:8px 4px; border-radius:6px; cursor:pointer; color:#c5ccd3;
+    min-height:36px; align-items:center;
   }
   #list .row:hover, #list .row.active { background:rgba(61,111,138,.45); color:#fff; }
   #list .len { color:#ffd27a; }
   #list .sec { margin:10px 0 4px; color:#8a9098; font-size:10px; }
-  #badge { position:absolute; right:16px; bottom:16px; z-index:2; font-size:11px; color:#8a9098; }
+  #badge { position:absolute; right:16px; bottom:16px; z-index:2; font-size:11px; color:#8a9098;
+    padding-bottom: env(safe-area-inset-bottom, 0); }
   #tip {
     position:absolute; left:50%; transform:translateX(-50%); bottom:18px; z-index:2;
-    background:rgba(0,0,0,.65); padding:8px 14px; border-radius:10px; font-size:12px;
-    display:none; max-width:90vw;
+    background:rgba(0,0,0,.7); padding:10px 14px; border-radius:10px; font-size:13px;
+    display:none; max-width:min(92vw, 420px); text-align:center;
+    bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  }
+  /* 手机：底部抽屉，默认收起，3D 占满屏 */
+  @media (max-width: 768px) {
+    #ui {
+      left:0; right:0; top:auto; bottom:0; width:100%; max-width:none;
+      border-radius:16px 16px 0 0; padding:10px 14px calc(12px + env(safe-area-inset-bottom, 0px));
+      max-height: min(72dvh, 560px); box-shadow: 0 -8px 28px rgba(0,0,0,.35);
+    }
+    #ui.collapsed { max-height: none; }
+    #ui.collapsed #uiBody { display:none; }
+    #ui h1 { font-size:15px; margin:0; }
+    #ui .meta { font-size:12px; }
+    #badge { display:none; }
+    #tip { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+    #ui.collapsed ~ #tip { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
   }
 </style>
 </head>
 <body>
-<div id="ui">
-  <h1>上床 2200×1200 + 双斜杆楼梯</h1>
-  <p class="meta">净高1400 · 围挡600 · 爬梯口600</p>
-  <p class="meta" id="countLine"></p>
-  <div class="note">
-    <b>楼梯（实拍焊法）</b><br/>
-    与床头↔床尾 <b>垂直</b>（贴床尾沿进深爬）<br/>
-    <b>2根斜杆在下方</b>做主梁（各约 1877 mm）<br/>
-    斜杆上每级焊 <b>短竖杆</b>（双侧各1，共10根，净高约220）<br/>
-    竖杆顶再焊 <b>矩形踏面框</b>（横杆+边杆，进深约360）<br/>
-    共5级升高280 · 顶550方平台 · 落地柱1<br/>
-    床头爬梯口600不焊
+<div id="ui" class="collapsed">
+  <div id="uiHeader">
+    <div>
+      <h1>上床 2200×1200 + 抽屉踏步楼梯</h1>
+      <p class="meta">净高1400 · 外伸400立柱内收 · 爬梯口600</p>
+      <p class="meta" id="countLine"></p>
+    </div>
+    <button type="button" id="btnToggle" aria-expanded="false">详情</button>
   </div>
-  <p class="hint">拖转 · 滚轮缩放 · 橙色=爬梯口</p>
+  <div id="uiBody">
+  <div class="note">
+    <b>上床</b>：床头外伸 400 悬挑，落地柱内收到柜缘（不挡下床）；橙色块为下床占位<br/>
+    <b>楼梯（迎宾面浅抽）</b>：贴床尾沿进深爬；每级开口朝房间抽拉<br/>
+    总进深1800 = 平台300 + 爬梯段1500（踏深300×5）· 升280<br/>
+    抽屉净空 470×160×260（宽×高×深）· 爬梯口600不焊方钢
+  </div>
+  <p class="hint" id="hintLine">请用本地 HTTP 打开（双击 file:// 会空白）· 单指旋转 · CAD尺寸线 ——557——</p>
   <div class="btns">
-    <button id="btnReset">复位</button>
-    <button id="btnTube" class="secondary">关键尺寸</button>
-    <button id="btnOverall" class="secondary">总尺寸线</button>
+    <button type="button" id="btnReset">复位</button>
+    <button type="button" id="btnTube" class="secondary">杆件尺寸</button>
+    <button type="button" id="btnOverall" class="secondary">外形总尺</button>
   </div>
   <div id="listWrap"><div id="list"></div></div>
+  </div>
 </div>
-<div id="badge">单位 mm · 斜杆在下 + 每级竖杆与踏面框</div>
+<div id="badge">单位 mm · 外伸400内收柱 · 净空 470×160×260 · 踏深300</div>
 <div id="tip"></div>
 <script type="importmap">
 {"imports":{
@@ -77,26 +112,47 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const BOXES = [{"id": "T01", "name": "上床角立柱1", "cx": 20.0, "cy": 30.0, "cz": 730.0, "dx": 40.0, "dy": 60.0, "dz": 1460.0, "kind": "steel", "len": 1460, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T02", "name": "上床角立柱2", "cx": 2180.0, "cy": 30.0, "cz": 730.0, "dx": 40.0, "dy": 60.0, "dz": 1460.0, "kind": "steel", "len": 1460, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T03", "name": "上床角立柱3", "cx": 20.0, "cy": 1170.0, "cz": 730.0, "dx": 40.0, "dy": 60.0, "dz": 1460.0, "kind": "steel", "len": 1460, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T04", "name": "上床角立柱4", "cx": 2180.0, "cy": 1170.0, "cz": 730.0, "dx": 40.0, "dy": 60.0, "dz": 1460.0, "kind": "steel", "len": 1460, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T05", "name": "上床长边梁(靠墙)", "cx": 1100.0, "cy": 20.0, "cz": 1430.0, "dx": 2120.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 2120, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T06", "name": "上床长边梁(朝房间)", "cx": 1100.0, "cy": 1180.0, "cz": 1430.0, "dx": 2120.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 2120, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T07", "name": "上床短边梁(床头)", "cx": 20.0, "cy": 600.0, "cz": 1430.0, "dx": 40.0, "dy": 1080.0, "dz": 60.0, "kind": "steel", "len": 1080, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T08", "name": "上床短边梁(床尾)", "cx": 2180.0, "cy": 600.0, "cz": 1430.0, "dx": 40.0, "dy": 1080.0, "dz": 60.0, "kind": "steel", "len": 1080, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T09", "name": "上床横撑1", "cx": 400.0, "cy": 600.0, "cz": 1430.0, "dx": 40.0, "dy": 1120.0, "dz": 60.0, "kind": "steel", "len": 1120, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T10", "name": "上床横撑2", "cx": 800.0, "cy": 600.0, "cz": 1430.0, "dx": 40.0, "dy": 1120.0, "dz": 60.0, "kind": "steel", "len": 1120, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T11", "name": "上床横撑3", "cx": 1200.0, "cy": 600.0, "cz": 1430.0, "dx": 40.0, "dy": 1120.0, "dz": 60.0, "kind": "steel", "len": 1120, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T12", "name": "上床横撑4", "cx": 1600.0, "cy": 600.0, "cz": 1430.0, "dx": 40.0, "dy": 1120.0, "dz": 60.0, "kind": "steel", "len": 1120, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T13", "name": "围挡前立柱@600", "cx": 620.0, "cy": 1180.0, "cz": 1760.0, "dx": 40.0, "dy": 40.0, "dz": 600.0, "kind": "steel", "len": 600, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T14", "name": "围挡前立柱@700", "cx": 720.0, "cy": 1180.0, "cz": 1760.0, "dx": 40.0, "dy": 40.0, "dz": 600.0, "kind": "steel", "len": 600, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T15", "name": "围挡前立柱@1100", "cx": 1120.0, "cy": 1180.0, "cz": 1760.0, "dx": 40.0, "dy": 40.0, "dz": 600.0, "kind": "steel", "len": 600, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T16", "name": "围挡前立柱@1500", "cx": 1520.0, "cy": 1180.0, "cz": 1760.0, "dx": 40.0, "dy": 40.0, "dz": 600.0, "kind": "steel", "len": 600, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T17", "name": "围挡前立柱@1900", "cx": 1920.0, "cy": 1180.0, "cz": 1760.0, "dx": 40.0, "dy": 40.0, "dz": 600.0, "kind": "steel", "len": 600, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T18", "name": "围挡床头立柱1", "cx": 20.0, "cy": 60.0, "cz": 1760.0, "dx": 40.0, "dy": 40.0, "dz": 600.0, "kind": "steel", "len": 600, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T19", "name": "围挡床头立柱2", "cx": 20.0, "cy": 420.0, "cz": 1760.0, "dx": 40.0, "dy": 40.0, "dz": 600.0, "kind": "steel", "len": 600, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T20", "name": "围挡床头立柱3", "cx": 20.0, "cy": 820.0, "cz": 1760.0, "dx": 40.0, "dy": 40.0, "dz": 600.0, "kind": "steel", "len": 600, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T21", "name": "围挡前上横梁", "cx": 1380.0, "cy": 1180.0, "cz": 2040.0, "dx": 1560.0, "dy": 40.0, "dz": 40.0, "kind": "steel", "len": 1560, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T22", "name": "围挡前下横梁", "cx": 1380.0, "cy": 1180.0, "cz": 1560.0, "dx": 1560.0, "dy": 40.0, "dz": 40.0, "kind": "steel", "len": 1560, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T23", "name": "围挡床头上横梁", "cx": 20.0, "cy": 600.0, "cz": 2040.0, "dx": 40.0, "dy": 1120.0, "dz": 40.0, "kind": "steel", "len": 1120, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T24", "name": "围挡床头下横梁", "cx": 20.0, "cy": 600.0, "cz": 1560.0, "dx": 40.0, "dy": 1120.0, "dz": 40.0, "kind": "steel", "len": 1120, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T25", "name": "围挡床尾前角", "cx": 2180.0, "cy": 1180.0, "cz": 1760.0, "dx": 40.0, "dy": 40.0, "dz": 600.0, "kind": "steel", "len": 600, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T26", "name": "楼梯斜杆内侧", "x1": 2200.0, "y1": 1800.0, "z1": 0.0, "x2": 2200.0, "y2": 550.0, "z2": 1400.0, "cx": 2200.0, "cy": 1175.0, "cz": 700.0, "dx": 40.0, "dy": 40.0, "dz": 1877.0, "kind": "steel", "len": 1877, "section": "40×60", "showLabel": true, "diag": true}, {"id": "T27", "name": "楼梯斜杆外侧", "x1": 2710.0, "y1": 1800.0, "z1": 0.0, "x2": 2710.0, "y2": 550.0, "z2": 1400.0, "cx": 2710.0, "cy": 1175.0, "cz": 700.0, "dx": 40.0, "dy": 40.0, "dz": 1877.0, "kind": "steel", "len": 1877, "section": "40×60", "showLabel": true, "diag": true}, {"id": "T28", "name": "踏步1竖杆内", "cx": 2220.0, "cy": 1800.0, "cz": 110.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T29", "name": "踏步1竖杆外", "cx": 2730.0, "cy": 1800.0, "cz": 110.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T30", "name": "踏步1外口横杆", "cx": 2475.0, "cy": 1800.0, "cz": 250.0, "dx": 470.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 470, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T31", "name": "踏步1内口横杆", "cx": 2475.0, "cy": 1480.0, "cz": 250.0, "dx": 470.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 470, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T32", "name": "踏步1左边杆", "cx": 2220.0, "cy": 1640.0, "cz": 250.0, "dx": 40.0, "dy": 280.0, "dz": 60.0, "kind": "steel", "len": 280, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T33", "name": "踏步1右边杆", "cx": 2730.0, "cy": 1640.0, "cz": 250.0, "dx": 40.0, "dy": 280.0, "dz": 60.0, "kind": "steel", "len": 280, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T34", "name": "踏步2竖杆内", "cx": 2220.0, "cy": 1550.0, "cz": 390.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T35", "name": "踏步2竖杆外", "cx": 2730.0, "cy": 1550.0, "cz": 390.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T36", "name": "踏步2外口横杆", "cx": 2475.0, "cy": 1550.0, "cz": 530.0, "dx": 470.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 470, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T37", "name": "踏步2内口横杆", "cx": 2475.0, "cy": 1230.0, "cz": 530.0, "dx": 470.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 470, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T38", "name": "踏步2左边杆", "cx": 2220.0, "cy": 1390.0, "cz": 530.0, "dx": 40.0, "dy": 280.0, "dz": 60.0, "kind": "steel", "len": 280, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T39", "name": "踏步2右边杆", "cx": 2730.0, "cy": 1390.0, "cz": 530.0, "dx": 40.0, "dy": 280.0, "dz": 60.0, "kind": "steel", "len": 280, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T40", "name": "踏步3竖杆内", "cx": 2220.0, "cy": 1300.0, "cz": 670.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T41", "name": "踏步3竖杆外", "cx": 2730.0, "cy": 1300.0, "cz": 670.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T42", "name": "踏步3外口横杆", "cx": 2475.0, "cy": 1300.0, "cz": 810.0, "dx": 470.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 470, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T43", "name": "踏步3内口横杆", "cx": 2475.0, "cy": 980.0, "cz": 810.0, "dx": 470.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 470, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T44", "name": "踏步3左边杆", "cx": 2220.0, "cy": 1140.0, "cz": 810.0, "dx": 40.0, "dy": 280.0, "dz": 60.0, "kind": "steel", "len": 280, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T45", "name": "踏步3右边杆", "cx": 2730.0, "cy": 1140.0, "cz": 810.0, "dx": 40.0, "dy": 280.0, "dz": 60.0, "kind": "steel", "len": 280, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T46", "name": "踏步4竖杆内", "cx": 2220.0, "cy": 1050.0, "cz": 950.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T47", "name": "踏步4竖杆外", "cx": 2730.0, "cy": 1050.0, "cz": 950.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T48", "name": "踏步4外口横杆", "cx": 2475.0, "cy": 1050.0, "cz": 1090.0, "dx": 470.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 470, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T49", "name": "踏步4内口横杆", "cx": 2475.0, "cy": 730.0, "cz": 1090.0, "dx": 470.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 470, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T50", "name": "踏步4左边杆", "cx": 2220.0, "cy": 890.0, "cz": 1090.0, "dx": 40.0, "dy": 280.0, "dz": 60.0, "kind": "steel", "len": 280, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T51", "name": "踏步4右边杆", "cx": 2730.0, "cy": 890.0, "cz": 1090.0, "dx": 40.0, "dy": 280.0, "dz": 60.0, "kind": "steel", "len": 280, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T52", "name": "踏步5竖杆内", "cx": 2220.0, "cy": 800.0, "cz": 1230.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T53", "name": "踏步5竖杆外", "cx": 2730.0, "cy": 800.0, "cz": 1230.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T54", "name": "踏步5外口横杆", "cx": 2475.0, "cy": 800.0, "cz": 1370.0, "dx": 470.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 470, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T55", "name": "踏步5内口横杆", "cx": 2475.0, "cy": 480.0, "cz": 1370.0, "dx": 470.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 470, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T56", "name": "踏步5左边杆", "cx": 2220.0, "cy": 640.0, "cz": 1370.0, "dx": 40.0, "dy": 280.0, "dz": 60.0, "kind": "steel", "len": 280, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T57", "name": "踏步5右边杆", "cx": 2730.0, "cy": 640.0, "cz": 1370.0, "dx": 40.0, "dy": 280.0, "dz": 60.0, "kind": "steel", "len": 280, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T58", "name": "平台靠墙梁", "cx": 2475.0, "cy": 20.0, "cz": 1430.0, "dx": 550.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 550, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T59", "name": "平台外沿梁", "cx": 2475.0, "cy": 530.0, "cz": 1430.0, "dx": 550.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 550, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T60", "name": "平台左边梁", "cx": 2220.0, "cy": 275.0, "cz": 1430.0, "dx": 40.0, "dy": 470.0, "dz": 60.0, "kind": "steel", "len": 470, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T61", "name": "平台右边梁", "cx": 2730.0, "cy": 275.0, "cz": 1430.0, "dx": 40.0, "dy": 470.0, "dz": 60.0, "kind": "steel", "len": 470, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T62", "name": "平台中撑", "cx": 2475.0, "cy": 275.0, "cz": 1430.0, "dx": 40.0, "dy": 470.0, "dz": 60.0, "kind": "steel", "len": 470, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T63", "name": "平台落地立柱", "cx": 2730.0, "cy": 530.0, "cz": 730.0, "dx": 40.0, "dy": 40.0, "dz": 1460.0, "kind": "steel", "len": 1460, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T64", "name": "斜杆底端支脚", "cx": 2730.0, "cy": 1780.0, "cz": 140.0, "dx": 40.0, "dy": 40.0, "dz": 280.0, "kind": "steel", "len": 280, "section": "40×60", "showLabel": false, "diag": false}, {"id": "FLOOR", "name": "地面", "cx": 1375.0, "cy": 900.0, "cz": -1.0, "dx": 3150.0, "dy": 2200.0, "dz": 2.0, "kind": "floor", "len": 0, "section": "", "showLabel": false, "diag": false}, {"id": "M1", "name": "爬梯入口600(非方钢)", "cx": 300.0, "cy": 1150.0, "cz": 1760.0, "dx": 600.0, "dy": 60.0, "dz": 600.0, "kind": "marker", "len": 600, "section": "", "showLabel": false, "diag": false}];
+const tipBoot = document.getElementById('tip');
+function showBootError(err) {
+  console.error(err);
+  if (!tipBoot) return;
+  tipBoot.style.display = 'block';
+  tipBoot.style.background = 'rgba(120,20,20,.9)';
+  tipBoot.textContent = '3D 加载失败：请用本地 HTTP 打开（不要双击 file://）。' +
+    String(err && (err.message || err));
+}
+window.addEventListener('unhandledrejection', (e) => showBootError(e.reason || e));
+
+try {
+
+const BOXES = [{"id": "T01", "name": "上床内收立柱(靠墙)", "cx": 420.0, "cy": 30.0, "cz": 730.0, "dx": 40.0, "dy": 60.0, "dz": 1460.0, "kind": "steel", "len": 1460, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T02", "name": "上床内收立柱(朝房间)", "cx": 420.0, "cy": 1170.0, "cz": 730.0, "dx": 40.0, "dy": 60.0, "dz": 1460.0, "kind": "steel", "len": 1460, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T03", "name": "上床床尾立柱(靠墙)", "cx": 2180.0, "cy": 30.0, "cz": 730.0, "dx": 40.0, "dy": 60.0, "dz": 1460.0, "kind": "steel", "len": 1460, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T04", "name": "上床床尾立柱(朝房间)", "cx": 2180.0, "cy": 1170.0, "cz": 730.0, "dx": 40.0, "dy": 60.0, "dz": 1460.0, "kind": "steel", "len": 1460, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T05", "name": "上床长边梁(靠墙)", "cx": 1100.0, "cy": 20.0, "cz": 1430.0, "dx": 2120.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 2120, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T06", "name": "上床长边梁(朝房间)", "cx": 1100.0, "cy": 1180.0, "cz": 1430.0, "dx": 2120.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 2120, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T07", "name": "上床短边梁(床头)", "cx": 20.0, "cy": 600.0, "cz": 1430.0, "dx": 40.0, "dy": 1080.0, "dz": 60.0, "kind": "steel", "len": 1080, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T08", "name": "上床短边梁(床尾)", "cx": 2180.0, "cy": 600.0, "cz": 1430.0, "dx": 40.0, "dy": 1080.0, "dz": 60.0, "kind": "steel", "len": 1080, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T09", "name": "上床横撑1", "cx": 400.0, "cy": 600.0, "cz": 1430.0, "dx": 40.0, "dy": 1120.0, "dz": 60.0, "kind": "steel", "len": 1120, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T10", "name": "上床横撑2", "cx": 800.0, "cy": 600.0, "cz": 1430.0, "dx": 40.0, "dy": 1120.0, "dz": 60.0, "kind": "steel", "len": 1120, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T11", "name": "上床横撑3", "cx": 1200.0, "cy": 600.0, "cz": 1430.0, "dx": 40.0, "dy": 1120.0, "dz": 60.0, "kind": "steel", "len": 1120, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T12", "name": "上床横撑4", "cx": 1600.0, "cy": 600.0, "cz": 1430.0, "dx": 40.0, "dy": 1120.0, "dz": 60.0, "kind": "steel", "len": 1120, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T13", "name": "围挡前立柱@600", "cx": 620.0, "cy": 1180.0, "cz": 1760.0, "dx": 40.0, "dy": 40.0, "dz": 600.0, "kind": "steel", "len": 600, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T14", "name": "围挡前立柱@700", "cx": 720.0, "cy": 1180.0, "cz": 1760.0, "dx": 40.0, "dy": 40.0, "dz": 600.0, "kind": "steel", "len": 600, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T15", "name": "围挡前立柱@1100", "cx": 1120.0, "cy": 1180.0, "cz": 1760.0, "dx": 40.0, "dy": 40.0, "dz": 600.0, "kind": "steel", "len": 600, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T16", "name": "围挡前立柱@1500", "cx": 1520.0, "cy": 1180.0, "cz": 1760.0, "dx": 40.0, "dy": 40.0, "dz": 600.0, "kind": "steel", "len": 600, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T17", "name": "围挡前立柱@1900", "cx": 1920.0, "cy": 1180.0, "cz": 1760.0, "dx": 40.0, "dy": 40.0, "dz": 600.0, "kind": "steel", "len": 600, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T18", "name": "围挡床头立柱1", "cx": 20.0, "cy": 60.0, "cz": 1760.0, "dx": 40.0, "dy": 40.0, "dz": 600.0, "kind": "steel", "len": 600, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T19", "name": "围挡床头立柱2", "cx": 20.0, "cy": 420.0, "cz": 1760.0, "dx": 40.0, "dy": 40.0, "dz": 600.0, "kind": "steel", "len": 600, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T20", "name": "围挡床头立柱3", "cx": 20.0, "cy": 820.0, "cz": 1760.0, "dx": 40.0, "dy": 40.0, "dz": 600.0, "kind": "steel", "len": 600, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T21", "name": "围挡前上横梁", "cx": 1380.0, "cy": 1180.0, "cz": 2040.0, "dx": 1560.0, "dy": 40.0, "dz": 40.0, "kind": "steel", "len": 1560, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T22", "name": "围挡前下横梁", "cx": 1380.0, "cy": 1180.0, "cz": 1560.0, "dx": 1560.0, "dy": 40.0, "dz": 40.0, "kind": "steel", "len": 1560, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T23", "name": "围挡床头上横梁", "cx": 20.0, "cy": 600.0, "cz": 2040.0, "dx": 40.0, "dy": 1120.0, "dz": 40.0, "kind": "steel", "len": 1120, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T24", "name": "围挡床头下横梁", "cx": 20.0, "cy": 600.0, "cz": 1560.0, "dx": 40.0, "dy": 1120.0, "dz": 40.0, "kind": "steel", "len": 1120, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T25", "name": "围挡床尾前角", "cx": 2180.0, "cy": 1180.0, "cz": 1760.0, "dx": 40.0, "dy": 40.0, "dz": 600.0, "kind": "steel", "len": 600, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T26", "name": "踏步1外口横杆", "cx": 2475.0, "cy": 1780.0, "cz": 250.0, "dx": 550.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 550, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T27", "name": "踏步1内口横杆", "cx": 2475.0, "cy": 1520.0, "cz": 250.0, "dx": 550.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 550, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T28", "name": "踏步1左边杆", "cx": 2220.0, "cy": 1650.0, "cz": 250.0, "dx": 40.0, "dy": 220.0, "dz": 60.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T29", "name": "踏步1右边杆", "cx": 2730.0, "cy": 1650.0, "cz": 250.0, "dx": 40.0, "dy": 220.0, "dz": 60.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T30", "name": "踏步1背竖杆内", "cx": 2220.0, "cy": 1520.0, "cz": 110.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T31", "name": "踏步1背竖杆外", "cx": 2730.0, "cy": 1520.0, "cz": 110.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T32", "name": "踏步1底内口横杆", "cx": 2475.0, "cy": 1520.0, "cz": 30.0, "dx": 550.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 550, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T33", "name": "踏步1背腰横杆", "cx": 2475.0, "cy": 1520.0, "cz": 110.0, "dx": 470.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 470, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T34", "name": "踏步1左底轨", "cx": 2220.0, "cy": 1650.0, "cz": 30.0, "dx": 40.0, "dy": 220.0, "dz": 60.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T35", "name": "踏步1右底轨", "cx": 2730.0, "cy": 1650.0, "cz": 30.0, "dx": 40.0, "dy": 220.0, "dz": 60.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T36", "name": "踏步1外口边柱内", "cx": 2220.0, "cy": 1780.0, "cz": 110.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T37", "name": "踏步1外口边柱外", "cx": 2730.0, "cy": 1780.0, "cz": 110.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T38", "name": "踏步2外口横杆", "cx": 2475.0, "cy": 1480.0, "cz": 530.0, "dx": 550.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 550, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T39", "name": "踏步2内口横杆", "cx": 2475.0, "cy": 1220.0, "cz": 530.0, "dx": 550.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 550, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T40", "name": "踏步2左边杆", "cx": 2220.0, "cy": 1350.0, "cz": 530.0, "dx": 40.0, "dy": 220.0, "dz": 60.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T41", "name": "踏步2右边杆", "cx": 2730.0, "cy": 1350.0, "cz": 530.0, "dx": 40.0, "dy": 220.0, "dz": 60.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T42", "name": "踏步2背竖杆内", "cx": 2220.0, "cy": 1220.0, "cz": 390.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T43", "name": "踏步2背竖杆外", "cx": 2730.0, "cy": 1220.0, "cz": 390.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T44", "name": "踏步2底内口横杆", "cx": 2475.0, "cy": 1220.0, "cz": 310.0, "dx": 550.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 550, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T45", "name": "踏步2背腰横杆", "cx": 2475.0, "cy": 1220.0, "cz": 390.0, "dx": 470.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 470, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T46", "name": "踏步2左底轨", "cx": 2220.0, "cy": 1350.0, "cz": 310.0, "dx": 40.0, "dy": 220.0, "dz": 60.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T47", "name": "踏步2右底轨", "cx": 2730.0, "cy": 1350.0, "cz": 310.0, "dx": 40.0, "dy": 220.0, "dz": 60.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T48", "name": "踏步2外口边柱内", "cx": 2220.0, "cy": 1480.0, "cz": 390.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T49", "name": "踏步2外口边柱外", "cx": 2730.0, "cy": 1480.0, "cz": 390.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T50", "name": "踏步3外口横杆", "cx": 2475.0, "cy": 1180.0, "cz": 810.0, "dx": 550.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 550, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T51", "name": "踏步3内口横杆", "cx": 2475.0, "cy": 920.0, "cz": 810.0, "dx": 550.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 550, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T52", "name": "踏步3左边杆", "cx": 2220.0, "cy": 1050.0, "cz": 810.0, "dx": 40.0, "dy": 220.0, "dz": 60.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T53", "name": "踏步3右边杆", "cx": 2730.0, "cy": 1050.0, "cz": 810.0, "dx": 40.0, "dy": 220.0, "dz": 60.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T54", "name": "踏步3背竖杆内", "cx": 2220.0, "cy": 920.0, "cz": 670.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T55", "name": "踏步3背竖杆外", "cx": 2730.0, "cy": 920.0, "cz": 670.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T56", "name": "踏步3底内口横杆", "cx": 2475.0, "cy": 920.0, "cz": 590.0, "dx": 550.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 550, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T57", "name": "踏步3背腰横杆", "cx": 2475.0, "cy": 920.0, "cz": 670.0, "dx": 470.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 470, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T58", "name": "踏步3左底轨", "cx": 2220.0, "cy": 1050.0, "cz": 590.0, "dx": 40.0, "dy": 220.0, "dz": 60.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T59", "name": "踏步3右底轨", "cx": 2730.0, "cy": 1050.0, "cz": 590.0, "dx": 40.0, "dy": 220.0, "dz": 60.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T60", "name": "踏步3外口边柱内", "cx": 2220.0, "cy": 1180.0, "cz": 670.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T61", "name": "踏步3外口边柱外", "cx": 2730.0, "cy": 1180.0, "cz": 670.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T62", "name": "踏步4外口横杆", "cx": 2475.0, "cy": 880.0, "cz": 1090.0, "dx": 550.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 550, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T63", "name": "踏步4内口横杆", "cx": 2475.0, "cy": 620.0, "cz": 1090.0, "dx": 550.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 550, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T64", "name": "踏步4左边杆", "cx": 2220.0, "cy": 750.0, "cz": 1090.0, "dx": 40.0, "dy": 220.0, "dz": 60.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T65", "name": "踏步4右边杆", "cx": 2730.0, "cy": 750.0, "cz": 1090.0, "dx": 40.0, "dy": 220.0, "dz": 60.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T66", "name": "踏步4背竖杆内", "cx": 2220.0, "cy": 620.0, "cz": 950.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T67", "name": "踏步4背竖杆外", "cx": 2730.0, "cy": 620.0, "cz": 950.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T68", "name": "踏步4底内口横杆", "cx": 2475.0, "cy": 620.0, "cz": 870.0, "dx": 550.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 550, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T69", "name": "踏步4背腰横杆", "cx": 2475.0, "cy": 620.0, "cz": 950.0, "dx": 470.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 470, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T70", "name": "踏步4左底轨", "cx": 2220.0, "cy": 750.0, "cz": 870.0, "dx": 40.0, "dy": 220.0, "dz": 60.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T71", "name": "踏步4右底轨", "cx": 2730.0, "cy": 750.0, "cz": 870.0, "dx": 40.0, "dy": 220.0, "dz": 60.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T72", "name": "踏步4外口边柱内", "cx": 2220.0, "cy": 880.0, "cz": 950.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T73", "name": "踏步4外口边柱外", "cx": 2730.0, "cy": 880.0, "cz": 950.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T74", "name": "踏步5外口横杆", "cx": 2475.0, "cy": 580.0, "cz": 1370.0, "dx": 550.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 550, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T75", "name": "踏步5内口横杆", "cx": 2475.0, "cy": 320.0, "cz": 1370.0, "dx": 550.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 550, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T76", "name": "踏步5左边杆", "cx": 2220.0, "cy": 450.0, "cz": 1370.0, "dx": 40.0, "dy": 220.0, "dz": 60.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T77", "name": "踏步5右边杆", "cx": 2730.0, "cy": 450.0, "cz": 1370.0, "dx": 40.0, "dy": 220.0, "dz": 60.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T78", "name": "踏步5背竖杆内", "cx": 2220.0, "cy": 320.0, "cz": 1230.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T79", "name": "踏步5背竖杆外", "cx": 2730.0, "cy": 320.0, "cz": 1230.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T80", "name": "踏步5底内口横杆", "cx": 2475.0, "cy": 320.0, "cz": 1150.0, "dx": 550.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 550, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T81", "name": "踏步5背腰横杆", "cx": 2475.0, "cy": 320.0, "cz": 1230.0, "dx": 470.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 470, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T82", "name": "踏步5左底轨", "cx": 2220.0, "cy": 450.0, "cz": 1150.0, "dx": 40.0, "dy": 220.0, "dz": 60.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T83", "name": "踏步5右底轨", "cx": 2730.0, "cy": 450.0, "cz": 1150.0, "dx": 40.0, "dy": 220.0, "dz": 60.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T84", "name": "踏步5外口边柱内", "cx": 2220.0, "cy": 580.0, "cz": 1230.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T85", "name": "踏步5外口边柱外", "cx": 2730.0, "cy": 580.0, "cz": 1230.0, "dx": 40.0, "dy": 40.0, "dz": 220.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T86", "name": "平台靠墙梁", "cx": 2475.0, "cy": 20.0, "cz": 1430.0, "dx": 550.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 550, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T87", "name": "平台外沿梁", "cx": 2475.0, "cy": 280.0, "cz": 1430.0, "dx": 550.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 550, "section": "40×60", "showLabel": true, "diag": false}, {"id": "T88", "name": "平台左边梁", "cx": 2220.0, "cy": 150.0, "cz": 1430.0, "dx": 40.0, "dy": 220.0, "dz": 60.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T89", "name": "平台右边梁", "cx": 2730.0, "cy": 150.0, "cz": 1430.0, "dx": 40.0, "dy": 220.0, "dz": 60.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T90", "name": "平台中撑", "cx": 2475.0, "cy": 150.0, "cz": 1430.0, "dx": 40.0, "dy": 220.0, "dz": 60.0, "kind": "steel", "len": 220, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T91", "name": "平台柜靠墙内柱", "cx": 2220.0, "cy": 20.0, "cz": 730.0, "dx": 40.0, "dy": 40.0, "dz": 1460.0, "kind": "steel", "len": 1460, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T92", "name": "平台柜靠墙外柱", "cx": 2730.0, "cy": 20.0, "cz": 730.0, "dx": 40.0, "dy": 40.0, "dz": 1460.0, "kind": "steel", "len": 1460, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T93", "name": "平台柜外沿内柱", "cx": 2220.0, "cy": 280.0, "cz": 730.0, "dx": 40.0, "dy": 40.0, "dz": 1460.0, "kind": "steel", "len": 1460, "section": "40×60", "showLabel": false, "diag": false}, {"id": "T94", "name": "平台柜外沿外柱", "cx": 2730.0, "cy": 280.0, "cz": 730.0, "dx": 40.0, "dy": 40.0, "dz": 1460.0, "kind": "steel", "len": 1460, "section": "40×60", "showLabel": true, "diag": false}, {"id": "FLOOR", "name": "地面", "cx": 725.0, "cy": 900.0, "cz": -1.0, "dx": 4850.0, "dy": 2200.0, "dz": 2.0, "kind": "floor", "len": 0, "section": "", "showLabel": false, "diag": false}, {"id": "M1", "name": "下床占位1900×1130×400(非方钢)", "cx": -550.0, "cy": 565.0, "cz": 200.0, "dx": 1900.0, "dy": 1130.0, "dz": 400.0, "kind": "marker", "len": 1900, "section": "", "showLabel": false, "diag": false}, {"id": "M2", "name": "床头外伸400悬挑区(示意)", "cx": 200.0, "cy": 600.0, "cz": 1399.0, "dx": 400.0, "dy": 1200.0, "dz": 2.0, "kind": "marker", "len": 1200, "section": "", "showLabel": false, "diag": false}, {"id": "M3", "name": "爬梯入口600(非方钢)", "cx": 300.0, "cy": 1150.0, "cz": 1760.0, "dx": 600.0, "dy": 60.0, "dz": 600.0, "kind": "marker", "len": 600, "section": "", "showLabel": false, "diag": false}, {"id": "M4", "name": "踏步1抽屉净空470×160×260", "cx": 2475.0, "cy": 1670.0, "cz": 140.0, "dx": 470.0, "dy": 260.0, "dz": 160.0, "kind": "marker", "len": 470, "section": "", "showLabel": false, "diag": false}, {"id": "M5", "name": "踏步2抽屉净空470×160×260", "cx": 2475.0, "cy": 1370.0, "cz": 420.0, "dx": 470.0, "dy": 260.0, "dz": 160.0, "kind": "marker", "len": 470, "section": "", "showLabel": false, "diag": false}, {"id": "M6", "name": "踏步3抽屉净空470×160×260", "cx": 2475.0, "cy": 1070.0, "cz": 700.0, "dx": 470.0, "dy": 260.0, "dz": 160.0, "kind": "marker", "len": 470, "section": "", "showLabel": false, "diag": false}, {"id": "M7", "name": "踏步4抽屉净空470×160×260", "cx": 2475.0, "cy": 770.0, "cz": 980.0, "dx": 470.0, "dy": 260.0, "dz": 160.0, "kind": "marker", "len": 470, "section": "", "showLabel": false, "diag": false}, {"id": "M8", "name": "踏步5抽屉净空470×160×260", "cx": 2475.0, "cy": 470.0, "cz": 1260.0, "dx": 470.0, "dy": 260.0, "dz": 160.0, "kind": "marker", "len": 470, "section": "", "showLabel": false, "diag": false}];
 const STEELS = BOXES.filter(b => b.kind === 'steel');
+const isMobile = matchMedia('(max-width:768px), (pointer:coarse)').matches;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x1a1d21);
 scene.fog = new THREE.Fog(0x1a1d21, 9000, 20000);
 
-const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 1, 50000);
-camera.position.set(3200, 2400, 2800);
+const camera = new THREE.PerspectiveCamera(isMobile ? 52 : 45, innerWidth/innerHeight, 1, 50000);
+camera.position.set(isMobile ? 3800 : 3200, isMobile ? 2800 : 2400, isMobile ? 3200 : 2800);
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const renderer = new THREE.WebGLRenderer({ antialias: !isMobile, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, isMobile ? 1.75 : 2));
 renderer.setSize(innerWidth, innerHeight);
-renderer.shadowMap.enabled = true;
+renderer.shadowMap.enabled = !isMobile;
 document.body.appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(1400, 700, 900);
 controls.enableDamping = true;
-controls.dampingFactor = 0.06;
+controls.dampingFactor = 0.08;
+controls.enablePan = true;
+controls.screenSpacePanning = false;
+controls.minDistance = 800;
+controls.maxDistance = 12000;
+controls.rotateSpeed = isMobile ? 0.85 : 1;
+controls.zoomSpeed = isMobile ? 0.9 : 1;
+controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
 
 scene.add(new THREE.HemisphereLight(0xffffff, 0x444455, 1.05));
 const dir = new THREE.DirectionalLight(0xffffff, 1.25);
@@ -107,9 +163,10 @@ scene.add(new THREE.AxesHelper(500));
 
 const steelMat = new THREE.MeshStandardMaterial({ color: 0x8e97a1, metalness: 0.55, roughness: 0.4 });
 const railMat = new THREE.MeshStandardMaterial({ color: 0xa8b0ba, metalness: 0.45, roughness: 0.42 });
+// 斜杆着色与桌面参考 HTML 一致；点选高亮仍用蓝色
 const diagMat = new THREE.MeshStandardMaterial({ color: 0xc4a574, metalness: 0.5, roughness: 0.35 });
 const markerMat = new THREE.MeshStandardMaterial({ color: 0xff8c42, transparent: true, opacity: 0.35, depthWrite: false });
-const hiMat = new THREE.MeshStandardMaterial({ color: 0xf0b429, emissive: 0x553300, metalness: 0.3, roughness: 0.4 });
+const hiMat = new THREE.MeshStandardMaterial({ color: 0x3b82f6, emissive: 0x1e3a8a, metalness: 0.35, roughness: 0.35 });
 const edgeMat = new THREE.LineBasicMaterial({ color: 0x2c3136 });
 const floorMat = new THREE.MeshStandardMaterial({ color: 0x2a2e34, roughness: 0.95 });
 
@@ -117,30 +174,116 @@ function toThree(x, y, z) { return new THREE.Vector3(x, z, y); }
 
 const root = new THREE.Group();
 const meshById = new Map();
-const labelGroup = new THREE.Group();
-const overallGroup = new THREE.Group();
+const labelGroup = new THREE.Group();   // 杆件标尺（默认关）
+const overallGroup = new THREE.Group(); // 外形 CAD 尺寸（默认开）
 scene.add(root); scene.add(labelGroup); scene.add(overallGroup);
 
-function makeLabel(text, pos, scale=300) {
+const dimMeshMat = new THREE.MeshBasicMaterial({ color: 0xffc857, depthWrite: false, depthTest: true });
+const dimExtMeshMat = new THREE.MeshBasicMaterial({ color: 0xd4a84b, depthWrite: false, depthTest: true });
+const DIM_T = 3.5; // 细尺寸线（方条模拟，避免 WebGL 细线不可见）
+
+function addBar(group, a, b, mat, thick=DIM_T) {
+  const dir = new THREE.Vector3().subVectors(b, a);
+  const len = dir.length();
+  if (len < 1) return;
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(thick, thick, len), mat);
+  mesh.position.copy(a).add(b).multiplyScalar(0.5);
+  mesh.lookAt(b);
+  mesh.renderOrder = 2;
+  group.add(mesh);
+}
+
+/** 纯数字（无方格），屏幕恒定大小，细小可读 */
+function makeDimText(text, pos) {
+  const dpr = Math.min(devicePixelRatio || 1, 2);
   const canvas = document.createElement('canvas');
-  canvas.width = 320; canvas.height = 72;
+  canvas.width = 320 * dpr; canvas.height = 96 * dpr;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = 'rgba(10,12,16,0.78)';
-  roundRect(ctx, 8, 12, 304, 48, 10); ctx.fill();
-  ctx.strokeStyle = 'rgba(255,210,122,0.6)'; ctx.lineWidth = 2; ctx.stroke();
-  ctx.fillStyle = '#ffe6a8'; ctx.font = '700 26px sans-serif';
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, 320, 96);
+  ctx.font = '600 36px "PingFang SC","Helvetica Neue",sans-serif';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(text, 160, 36);
+  let fs = 36;
+  while (fs > 24 && ctx.measureText(text).width > 290) {
+    fs -= 2; ctx.font = `600 ${fs}px "PingFang SC","Helvetica Neue",sans-serif`;
+  }
+  ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,10,14,0.85)';
+  ctx.strokeText(text, 160, 48);
+  ctx.fillStyle = '#ffe08a';
+  ctx.fillText(text, 160, 48);
   const tex = new THREE.CanvasTexture(canvas);
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: true }));
-  sp.scale.set(scale, scale * 0.225, 1);
+  tex.needsUpdate = true;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: tex, transparent: true, depthTest: false, depthWrite: false,
+    sizeAttenuation: false,
+  }));
+  const w = isMobile ? 0.11 : 0.08;
+  sp.scale.set(w, w * 0.3, 1);
   sp.position.copy(pos);
+  sp.renderOrder = 20;
   return sp;
 }
-function roundRect(ctx,x,y,w,h,r){
-  ctx.beginPath();
-  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
-  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+
+function gapForText(text, dimLen) {
+  const n = String(text).replace(/\s/g,'').length;
+  return Math.min(dimLen * 0.32, Math.max(55, n * 36));
+}
+
+/** 标准 CAD：引出线 + 尺寸线中间断开写数字 ——557—— */
+function addCadDim(group, p1, p2, text, offset) {
+  const o = offset.clone();
+  if (o.lengthSq() < 1) return;
+  const a = p1.clone().add(o);
+  const b = p2.clone().add(o);
+  const dimDir = new THREE.Vector3().subVectors(b, a);
+  const dimLen = dimDir.length();
+  if (dimLen < 1) return;
+  dimDir.multiplyScalar(1 / dimLen);
+  // 引出线（构件端点 → 尺寸线）
+  addBar(group, p1, a, dimExtMeshMat, 2.5);
+  addBar(group, p2, b, dimExtMeshMat, 2.5);
+  // 尺寸线两段 + 中间缺口
+  const mid = a.clone().add(b).multiplyScalar(0.5);
+  const gap = gapForText(text, dimLen);
+  const g0 = mid.clone().addScaledVector(dimDir, -gap/2);
+  const g1 = mid.clone().addScaledVector(dimDir,  gap/2);
+  if (a.distanceTo(g0) > 12) addBar(group, a, g0, dimMeshMat);
+  if (g1.distanceTo(b) > 12) addBar(group, g1, b, dimMeshMat);
+  // 端刻度
+  let tick = new THREE.Vector3().crossVectors(dimDir, o).normalize();
+  if (tick.lengthSq() < 1e-6) {
+    tick = new THREE.Vector3().crossVectors(dimDir, new THREE.Vector3(0,1,0)).normalize();
+  }
+  if (tick.lengthSq() < 1e-6) tick.set(1,0,0);
+  const th = 28;
+  addBar(group, a.clone().addScaledVector(tick,-th), a.clone().addScaledVector(tick,th), dimMeshMat, 3);
+  addBar(group, b.clone().addScaledVector(tick,-th), b.clone().addScaledVector(tick,th), dimMeshMat, 3);
+  group.add(makeDimText(text, mid.clone().addScaledVector(o.clone().normalize(), 28)));
+}
+
+/** 给一根钢管做 CAD 尺寸（外偏，一眼能看见） */
+function addMemberCad(group, b, offset) {
+  let p1, p2;
+  if (b.diag) {
+    p1 = toThree(b.x1, b.y1, b.z1);
+    p2 = toThree(b.x2, b.y2, b.z2);
+  } else {
+    const p = toThree(b.cx, b.cy, b.cz);
+    let axis = 'z', L = b.dz;
+    if (b.dx >= b.dy && b.dx >= b.dz) { axis = 'x'; L = b.dx; }
+    else if (b.dy >= b.dz) { axis = 'y'; L = b.dy; }
+    if (axis === 'z') {
+      p1 = p.clone().add(new THREE.Vector3(0, -L/2, 0));
+      p2 = p.clone().add(new THREE.Vector3(0,  L/2, 0));
+    } else if (axis === 'x') {
+      p1 = p.clone().add(new THREE.Vector3(-L/2, 0, 0));
+      p2 = p.clone().add(new THREE.Vector3( L/2, 0, 0));
+    } else {
+      p1 = p.clone().add(new THREE.Vector3(0, 0, -L/2));
+      p2 = p.clone().add(new THREE.Vector3(0, 0,  L/2));
+    }
+  }
+  addCadDim(group, p1, p2, String(b.len), offset);
 }
 
 BOXES.forEach(b => {
@@ -153,7 +296,6 @@ BOXES.forEach(b => {
     mesh = new THREE.Mesh(geo, diagMat.clone());
     mesh.position.copy(p1).add(p2).multiplyScalar(0.5);
     mesh.lookAt(p2);
-    // lookAt points local -Z toward target; our length is along Z — OK for tube
     mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo), edgeMat));
   } else {
     const geo = new THREE.BoxGeometry(b.dx, b.dz, b.dy);
@@ -169,42 +311,65 @@ BOXES.forEach(b => {
   }
   mesh.userData = b;
   if (b.kind === 'steel') {
-    mesh.castShadow = true;
+    mesh.castShadow = !isMobile;
     meshById.set(b.id, mesh);
-    if (b.showLabel) {
-      labelGroup.add(makeLabel(String(b.len), toThree(b.cx, b.cy, b.cz + 40), b.len >= 1000 ? 360 : 280));
-    }
   } else if (b.kind === 'marker') {
     meshById.set(b.id, mesh);
-    labelGroup.add(makeLabel('爬梯口600', toThree(b.cx, b.cy + 60, b.cz + 80), 340));
   }
   root.add(mesh);
 });
 
-function addDimLine(a, b, color=0xffcc66) {
-  overallGroup.add(new THREE.Line(
-    new THREE.BufferGeometry().setFromPoints([a,b]),
-    new THREE.LineBasicMaterial({ color })
-  ));
-}
-[
-  { a:[0,0,0], b:[2200,0,0], t:'床长2200', m:[1100,-150,0] },
-  { a:[0,0,0], b:[0,1200,0], t:'床宽1200', m:[-150,600,0] },
-  { a:[0,0,0], b:[0,0,1400], t:'净高1400', m:[-180,-180,700] },
-  { a:[2200,0,0], b:[2750,0,0], t:'梯宽550', m:[2475,-120,0] },
-  { a:[2200,550,0], b:[2200,1800,0], t:'水平投影1800', m:[2050,1175,0] },
-  { a:[2750,1800,0], b:[2750,550,1400], t:'斜杆~DIAG', m:[2950,1100,700] },
-  { a:[2750,550,0], b:[2750,550,1460], t:'落地柱', m:[2920,550,730] },
-  { a:[0,1200,1800], b:[600,1200,1800], t:'爬梯口600', m:[300,1350,1900] },
-].forEach(d => {
-  addDimLine(toThree(...d.a), toThree(...d.b));
-  overallGroup.add(makeLabel(d.t.replace('DIAG', String(1877)), toThree(...d.m), 340));
-});
+/** 同尺寸只标一眼能看到的那根 */
+function byName(list, pred) { return list.find(pred); }
+const S = STEELS;
+const dimSpecs = [
+  // 上床：内收立柱（朝房间）+ 梁
+  { b: byName(S, b => b.name.includes('上床内收立柱(朝房间)')),
+    off: new THREE.Vector3(160, 0, 160) },
+  { b: byName(S, b => b.name.includes('上床长边梁(朝房间)')),
+    off: new THREE.Vector3(0, 140, 160) },
+  { b: byName(S, b => b.name.includes('上床短边梁(床头)')),
+    off: new THREE.Vector3(-160, 120, 0) },
+  { b: byName(S, b => b.name === '上床横撑1'),
+    off: new THREE.Vector3(0, 130, 0) },
+  // 围挡：只留更显眼的上横梁
+  { b: byName(S, b => b.name.includes('围挡前上横梁')),
+    off: new THREE.Vector3(0, 140, 180) },
+  { b: byName(S, b => b.name.includes('围挡床头上横梁')),
+    off: new THREE.Vector3(-180, 130, 0) },
+  // 抽屉踏步
+  { b: byName(S, b => b.name === '踏步1外口边柱外'),
+    off: new THREE.Vector3(220, 0, 140) },
+  { b: byName(S, b => b.name === '踏步1外口横杆'),
+    off: new THREE.Vector3(40, 120, 200) },
+  { b: byName(S, b => b.name === '踏步1右底轨'),
+    off: new THREE.Vector3(200, 100, 60) },
+  // 平台柜
+  { b: byName(S, b => b.name.includes('平台外沿梁')),
+    off: new THREE.Vector3(0, 120, 160) },
+  { b: byName(S, b => b.name.includes('平台柜外沿外柱')),
+    off: new THREE.Vector3(180, 0, 140) },
+];
+dimSpecs.forEach(({b, off}) => { if (b) addMemberCad(labelGroup, b, off); });
+
+// 外形总尺
+addCadDim(overallGroup, toThree(0,0,0), toThree(2200,0,0), '2200', new THREE.Vector3(0, 0, -420));
+addCadDim(overallGroup, toThree(0,0,0), toThree(400,0,0), String(400), new THREE.Vector3(0, 0, -280));
+addCadDim(overallGroup, toThree(0,0,0), toThree(0,1200,0), '1200', new THREE.Vector3(-360, 0, 0));
+addCadDim(overallGroup, toThree(0,0,0), toThree(0,0,1400), '1400', new THREE.Vector3(-400, 0, -400));
+addCadDim(overallGroup, toThree(2200,1800,0), toThree(2750,1800,0), '550', new THREE.Vector3(0, 0, 300));
+addCadDim(overallGroup, toThree(2750,0,0), toThree(2750,1800,0), '1800', new THREE.Vector3(400, 0, 0));
+addCadDim(overallGroup, toThree(2750,0,0), toThree(2750,300,0), String(300), new THREE.Vector3(280, 0, 80));
+addCadDim(overallGroup, toThree(2750,300,0), toThree(2750,1800,0), String(1500), new THREE.Vector3(320, 0, 0));
+// 踏步1抽屉净空
+addCadDim(overallGroup, toThree(2240,1590,60), toThree(2710,1590,60), String(470), new THREE.Vector3(0, -80, 220));
+addCadDim(overallGroup, toThree(2710,1540,60), toThree(2710,1800,60), String(260), new THREE.Vector3(160, 0, 120));
+addCadDim(overallGroup, toThree(2710,1800,60), toThree(2710,1800,220), String(160), new THREE.Vector3(200, 0, 0));
 
 const listEl = document.getElementById('list');
 const totalLen = STEELS.reduce((s,b)=>s+b.len, 0);
 document.getElementById('countLine').textContent =
-  `共 ${STEELS.length} 根 · 约 ${(totalLen/1000).toFixed(1)} m · 斜杆 ${1877} mm×2`;
+  `共 ${STEELS.length} 根 · 约 ${(totalLen/1000).toFixed(1)} m · 踏深${300} · 净空 ${470}×${160}×${260}`;
 
 function addSec(t){ const d=document.createElement('div'); d.className='sec'; d.textContent=t; listEl.appendChild(d); }
 function addRow(b){
@@ -214,7 +379,21 @@ function addRow(b){
 }
 addSec('上床'); STEELS.filter(b=>b.name.startsWith('上床')).forEach(addRow);
 addSec('围挡'); STEELS.filter(b=>b.name.includes('围挡')).forEach(addRow);
-addSec('楼梯斜杆+踏步+平台'); STEELS.filter(b=>!(b.name.startsWith('上床')||b.name.includes('围挡'))).forEach(addRow);
+addSec('抽屉踏步+平台'); STEELS.filter(b=>!(b.name.startsWith('上床')||b.name.includes('围挡'))).forEach(addRow);
+
+const uiEl = document.getElementById('ui');
+const btnToggle = document.getElementById('btnToggle');
+btnToggle.onclick = () => {
+  uiEl.classList.toggle('collapsed');
+  const collapsed = uiEl.classList.contains('collapsed');
+  btnToggle.textContent = collapsed ? '详情' : '收起';
+  btnToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+};
+if (!isMobile) {
+  uiEl.classList.remove('collapsed');
+  btnToggle.textContent = '收起';
+  btnToggle.setAttribute('aria-expanded', 'true');
+}
 
 let current=null;
 function highlight(id, focus=false){
@@ -234,32 +413,49 @@ function highlight(id, focus=false){
   tip.textContent=`${b.id}  ${b.name}  下料 ${b.len} mm`;
   if(focus){
     controls.target.copy(mesh.position);
-    const d=camera.position.clone().sub(controls.target).setLength(2200);
+    const d=camera.position.clone().sub(controls.target).setLength(isMobile ? 2800 : 2200);
     camera.position.copy(controls.target.clone().add(d));
   }
 }
 
 const raycaster=new THREE.Raycaster(); const pointer=new THREE.Vector2();
+let ptrDown = null;
 renderer.domElement.addEventListener('pointerdown', (ev)=>{
   if(ev.button!==0) return;
+  ptrDown = { x: ev.clientX, y: ev.clientY, id: ev.pointerId };
+});
+renderer.domElement.addEventListener('pointerup', (ev)=>{
+  if(!ptrDown || ptrDown.id !== ev.pointerId) return;
+  const dx = ev.clientX - ptrDown.x, dy = ev.clientY - ptrDown.y;
+  ptrDown = null;
+  if(dx*dx + dy*dy > 36) return; // 拖转不算点选
   pointer.x=(ev.clientX/innerWidth)*2-1; pointer.y=-(ev.clientY/innerHeight)*2+1;
   raycaster.setFromCamera(pointer, camera);
   const hits=raycaster.intersectObjects([...meshById.values()].filter(m=>m.userData.kind==='steel'), false);
   if(hits.length) highlight(hits[0].object.userData.id, false);
 });
+renderer.domElement.addEventListener('pointercancel', ()=>{ ptrDown = null; });
 
 document.getElementById('btnReset').onclick=()=>{
-  camera.position.set(3200,2400,2800); controls.target.set(1400,700,900);
+  camera.position.set(isMobile ? 3800 : 3200, isMobile ? 2800 : 2400, isMobile ? 3200 : 2800);
+  controls.target.set(1400,700,900);
 };
 document.getElementById('btnTube').onclick=()=>{ labelGroup.visible=!labelGroup.visible; };
 document.getElementById('btnOverall').onclick=()=>{ overallGroup.visible=!overallGroup.visible; };
+labelGroup.visible = true;
 overallGroup.visible = true;
 
-addEventListener('resize', ()=>{
+function onResize(){
   camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
-});
+}
+addEventListener('resize', onResize);
+addEventListener('orientationchange', ()=> setTimeout(onResize, 200));
 (function animate(){ requestAnimationFrame(animate); controls.update(); renderer.render(scene,camera); })();
+
+} catch (err) {
+  showBootError(err);
+}
 </script>
 </body>
 </html>
