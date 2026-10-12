@@ -61,6 +61,13 @@
   #list .sec { margin:10px 0 4px; color:#8a9098; font-size:10px; }
   #badge { position:absolute; right:16px; bottom:16px; z-index:2; font-size:11px; color:#8a9098;
     padding-bottom: env(safe-area-inset-bottom, 0); }
+  #pullHint {
+    position:absolute; left:50%; transform:translateX(-50%); z-index:3; pointer-events:none;
+    bottom:52px; max-width:min(92vw, 420px); text-align:center;
+    background:rgba(20,22,26,.9); color:#f4efe6; font-size:12px; line-height:1.4;
+    padding:8px 14px; border-radius:999px; border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 8px 24px rgba(0,0,0,.35);
+  }
   /* 简要信息条（点钢材先出这个） */
   #tip {
     position:absolute; left:50%; transform:translateX(-50%); z-index:5;
@@ -208,6 +215,7 @@
     #ui h1 { font-size:15px; margin:0; }
     #ui .meta { font-size:12px; }
     #badge { display:none; }
+    #pullHint { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
     #tip {
       width:min(100vw - 16px, 400px);
       bottom: calc(92px + env(safe-area-inset-bottom, 0px));
@@ -232,7 +240,7 @@
     <b>架构</b>：手绘侧视骨架 —— 左右各一 YZ 共面侧片<br/>
     <b>杆件</b>：对口净长（立柱/踢面顶横梁内皮）· 通横/底梁贯通 · 中柱上下分 · 斜杆
   </div>
-  <p class="hint" id="hintLine">点钢管看简要 · 方格看施工 · 点空白/×关闭</p>
+  <p class="hint" id="hintLine">点钢管看简要 · 方格看施工 · 按住白色抽屉向外拖</p>
   <div class="btns">
     <button type="button" id="btnReset">复位</button>
     <button type="button" id="btnTube" class="secondary">杆件尺寸</button>
@@ -242,6 +250,7 @@
   </div>
 </div>
 <div id="badge">单位 mm · 1800×1400 · 6均分 · 抽520</div>
+<div id="pullHint">按住白色抽屉向外拖，松手会到位；轻点可开合</div>
 <div id="tip"></div>
 <div id="sheet" aria-hidden="true"></div>
 <script type="importmap">
@@ -268,6 +277,7 @@ window.addEventListener('unhandledrejection', (e) => showBootError(e.reason || e
 try {
 
 const BOXES = [{"id": "T01", "name": "上床内收立柱(靠墙)", "cx": 420.0, "cy": 30.0, "cz": 700.0, "dx": 40.0, "dy": 60.0, "dz": 1400.0, "kind": "steel", "len": 1400, "section": "40×60", "showLabel": true, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T02", "name": "上床内收立柱(朝房间)", "cx": 420.0, "cy": 1170.0, "cz": 700.0, "dx": 40.0, "dy": 60.0, "dz": 1400.0, "kind": "steel", "len": 1400, "section": "40×60", "showLabel": true, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T03", "name": "上床长边梁(靠墙)", "cx": 1120.0, "cy": 20.0, "cz": 1430.0, "dx": 2240.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 2240, "section": "40×60", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T04", "name": "上床长边梁(朝房间)", "cx": 1120.0, "cy": 1180.0, "cz": 1430.0, "dx": 2240.0, "dy": 40.0, "dz": 60.0, "kind": "steel", "len": 2240, "section": "40×60", "showLabel": true, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T05", "name": "上床短边梁(床头)", "cx": 20.0, "cy": 600.0, "cz": 1430.0, "dx": 40.0, "dy": 1120.0, "dz": 60.0, "kind": "steel", "len": 1120, "section": "40×60", "showLabel": true, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T06", "name": "上床短边梁(床尾)", "cx": 2220.0, "cy": 600.0, "cz": 1430.0, "dx": 40.0, "dy": 1120.0, "dz": 60.0, "kind": "steel", "len": 1120, "section": "40×60", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T07", "name": "上床横撑1", "cx": 400.0, "cy": 600.0, "cz": 1430.0, "dx": 40.0, "dy": 1120.0, "dz": 60.0, "kind": "steel", "len": 1120, "section": "40×60", "showLabel": true, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T08", "name": "上床横撑2", "cx": 760.0, "cy": 600.0, "cz": 1430.0, "dx": 40.0, "dy": 1120.0, "dz": 60.0, "kind": "steel", "len": 1120, "section": "40×60", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T09", "name": "上床横撑3", "cx": 1120.0, "cy": 600.0, "cz": 1430.0, "dx": 40.0, "dy": 1120.0, "dz": 60.0, "kind": "steel", "len": 1120, "section": "40×60", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T10", "name": "上床横撑4", "cx": 1480.0, "cy": 600.0, "cz": 1430.0, "dx": 40.0, "dy": 1120.0, "dz": 60.0, "kind": "steel", "len": 1120, "section": "40×60", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T11", "name": "上床横撑5", "cx": 1840.0, "cy": 600.0, "cz": 1430.0, "dx": 40.0, "dy": 1120.0, "dz": 60.0, "kind": "steel", "len": 1120, "section": "40×60", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T12", "name": "围挡前立柱@600", "cx": 620.0, "cy": 1180.0, "cz": 1640.0, "dx": 40.0, "dy": 40.0, "dz": 360.0, "kind": "steel", "len": 360, "section": "40×40", "showLabel": true, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T13", "name": "围挡前立柱@1033", "cx": 1053.0, "cy": 1180.0, "cz": 1640.0, "dx": 40.0, "dy": 40.0, "dz": 360.0, "kind": "steel", "len": 360, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T14", "name": "围挡前立柱@1467", "cx": 1487.0, "cy": 1180.0, "cz": 1640.0, "dx": 40.0, "dy": 40.0, "dz": 360.0, "kind": "steel", "len": 360, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T15", "name": "围挡前立柱@1900", "cx": 1920.0, "cy": 1180.0, "cz": 1640.0, "dx": 40.0, "dy": 40.0, "dz": 360.0, "kind": "steel", "len": 360, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T16", "name": "围挡前上横梁", "cx": 1270.0, "cy": 1180.0, "cz": 1840.0, "dx": 1340.0, "dy": 40.0, "dz": 40.0, "kind": "steel", "len": 1340, "section": "40×40", "showLabel": true, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T17", "name": "床梯共用柱(靠墙)", "cx": 2220.0, "cy": 30.0, "cz": 700.0, "dx": 40.0, "dy": 60.0, "dz": 1400.0, "kind": "steel", "len": 1400, "section": "40×60", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T18", "name": "楼梯靠墙外柱", "cx": 2730.0, "cy": 30.0, "cz": 700.0, "dx": 40.0, "dy": 60.0, "dz": 1400.0, "kind": "steel", "len": 1400, "section": "40×60", "showLabel": true, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T19", "name": "床梯共用柱(朝房间)", "cx": 2220.0, "cy": 1170.0, "cz": 700.0, "dx": 40.0, "dy": 60.0, "dz": 1400.0, "kind": "steel", "len": 1400, "section": "40×60", "showLabel": true, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T20", "name": "楼梯左底梁1080", "cx": 2220.0, "cy": 600.0, "cz": 30.0, "dx": 40.0, "dy": 1080.0, "dz": 60.0, "kind": "steel", "len": 1080, "section": "40×60", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T21", "name": "楼梯左底梁560", "cx": 2220.0, "cy": 1480.0, "cz": 30.0, "dx": 40.0, "dy": 560.0, "dz": 60.0, "kind": "steel", "len": 560, "section": "40×60", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T22", "name": "楼梯左中柱下段", "cx": 2220.0, "cy": 880.0, "cz": 126.66666666666667, "dx": 40.0, "dy": 40.0, "dz": 133.33333333333334, "kind": "steel", "len": 133, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T23", "name": "楼梯左中柱上段", "cx": 2220.0, "cy": 880.0, "cz": 796.6666666666667, "dx": 40.0, "dy": 40.0, "dz": 193.33333333333337, "kind": "steel", "len": 193, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T24", "name": "踏步1左通横240", "cx": 2220.0, "cy": 1020.0, "cz": 213.33333333333334, "dx": 40.0, "dy": 240.0, "dz": 40.0, "kind": "steel", "len": 240, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T25", "name": "踏步1左通横600", "cx": 2220.0, "cy": 1500.0, "cz": 213.33333333333334, "dx": 40.0, "dy": 600.0, "dz": 40.0, "kind": "steel", "len": 600, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T26", "name": "踏步1左踢面193", "cx": 2220.0, "cy": 1780.0, "cz": 96.66666666666667, "dx": 40.0, "dy": 40.0, "dz": 193.33333333333334, "kind": "steel", "len": 193, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T27", "name": "踏步2左通横540", "cx": 2220.0, "cy": 870.0, "cz": 446.6666666666667, "dx": 40.0, "dy": 540.0, "dz": 40.0, "kind": "steel", "len": 540, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T28", "name": "踏步2左通横300", "cx": 2220.0, "cy": 1350.0, "cz": 446.6666666666667, "dx": 40.0, "dy": 300.0, "dz": 40.0, "kind": "steel", "len": 300, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T29", "name": "踏步2左踢面193", "cx": 2220.0, "cy": 1480.0, "cz": 330.0, "dx": 40.0, "dy": 40.0, "dz": 193.33333333333334, "kind": "steel", "len": 193, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T30", "name": "踏步3左通横840", "cx": 2220.0, "cy": 720.0, "cz": 680.0, "dx": 40.0, "dy": 840.0, "dz": 40.0, "kind": "steel", "len": 840, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T31", "name": "踏步4左通横840", "cx": 2220.0, "cy": 480.0, "cz": 913.3333333333334, "dx": 40.0, "dy": 840.0, "dz": 40.0, "kind": "steel", "len": 840, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T32", "name": "踏步5左通横540", "cx": 2220.0, "cy": 330.0, "cz": 1146.6666666666667, "dx": 40.0, "dy": 540.0, "dz": 40.0, "kind": "steel", "len": 540, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T33", "name": "踏步5左踢面193", "cx": 2220.0, "cy": 580.0, "cz": 1030.0, "dx": 40.0, "dy": 40.0, "dz": 193.33333333333337, "kind": "steel", "len": 193, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T34", "name": "踏步6左踢面233", "cx": 2220.0, "cy": 280.0, "cz": 1283.3333333333335, "dx": 40.0, "dy": 40.0, "dz": 233.33333333333326, "kind": "steel", "len": 233, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T35", "name": "楼梯内侧斜撑", "x1": 2220.0, "y1": 870.0, "z1": 200.0, "x2": 2220.0, "y2": 30.0, "z2": 855.0, "cx": 2220.0, "cy": 450.0, "cz": 527.5, "dx": 40.0, "dy": 40.0, "dz": 1065.0, "kind": "steel", "len": 1065, "section": "40×60", "showLabel": false, "diag": true, "piece": null, "noMesh": false, "remark": ""}, {"id": "T36", "name": "楼梯右底梁1700", "cx": 2730.0, "cy": 910.0, "cz": 30.0, "dx": 40.0, "dy": 1700.0, "dz": 60.0, "kind": "steel", "len": 1700, "section": "40×60", "showLabel": true, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T37", "name": "楼梯右中柱下段", "cx": 2730.0, "cy": 880.0, "cz": 126.66666666666667, "dx": 40.0, "dy": 40.0, "dz": 133.33333333333334, "kind": "steel", "len": 133, "section": "40×40", "showLabel": true, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T38", "name": "楼梯右中柱上段", "cx": 2730.0, "cy": 880.0, "cz": 796.6666666666667, "dx": 40.0, "dy": 40.0, "dz": 193.33333333333337, "kind": "steel", "len": 193, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T39", "name": "踏步1右通横900", "cx": 2730.0, "cy": 1350.0, "cz": 213.33333333333334, "dx": 40.0, "dy": 900.0, "dz": 40.0, "kind": "steel", "len": 900, "section": "40×40", "showLabel": true, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T40", "name": "踏步1右踢面193", "cx": 2730.0, "cy": 1780.0, "cz": 96.66666666666667, "dx": 40.0, "dy": 40.0, "dz": 193.33333333333334, "kind": "steel", "len": 193, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T41", "name": "踏步2右通横900", "cx": 2730.0, "cy": 1050.0, "cz": 446.6666666666667, "dx": 40.0, "dy": 900.0, "dz": 40.0, "kind": "steel", "len": 900, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T42", "name": "踏步2右踢面193", "cx": 2730.0, "cy": 1480.0, "cz": 330.0, "dx": 40.0, "dy": 40.0, "dz": 193.33333333333334, "kind": "steel", "len": 193, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T43", "name": "踏步3右通横900", "cx": 2730.0, "cy": 750.0, "cz": 680.0, "dx": 40.0, "dy": 900.0, "dz": 40.0, "kind": "steel", "len": 900, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T44", "name": "踏步3右踢面193", "cx": 2730.0, "cy": 1180.0, "cz": 563.3333333333334, "dx": 40.0, "dy": 40.0, "dz": 193.33333333333331, "kind": "steel", "len": 193, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T45", "name": "踏步4右通横840", "cx": 2730.0, "cy": 480.0, "cz": 913.3333333333334, "dx": 40.0, "dy": 840.0, "dz": 40.0, "kind": "steel", "len": 840, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T46", "name": "踏步5右通横540", "cx": 2730.0, "cy": 330.0, "cz": 1146.6666666666667, "dx": 40.0, "dy": 540.0, "dz": 40.0, "kind": "steel", "len": 540, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T47", "name": "踏步5右踢面193", "cx": 2730.0, "cy": 580.0, "cz": 1030.0, "dx": 40.0, "dy": 40.0, "dz": 193.33333333333337, "kind": "steel", "len": 193, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T48", "name": "踏步6右通横300", "cx": 2730.0, "cy": 150.0, "cz": 1440.0, "dx": 40.0, "dy": 300.0, "dz": 40.0, "kind": "steel", "len": 300, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T49", "name": "踏步6右踢面253", "cx": 2730.0, "cy": 280.0, "cz": 1293.3333333333335, "dx": 40.0, "dy": 40.0, "dz": 253.33333333333326, "kind": "steel", "len": 253, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T50", "name": "楼梯外侧斜撑", "x1": 2730.0, "y1": 870.0, "z1": 200.0, "x2": 2730.0, "y2": 30.0, "z2": 855.0, "cx": 2730.0, "cy": 450.0, "cz": 527.5, "dx": 40.0, "dy": 40.0, "dz": 1065.0, "kind": "steel", "len": 1065, "section": "40×60", "showLabel": true, "diag": true, "piece": null, "noMesh": false, "remark": ""}, {"id": "T51", "name": "踏步1外口横杆", "cx": 2475.0, "cy": 1780.0, "cz": 213.33333333333334, "dx": 470.0, "dy": 40.0, "dz": 40.0, "kind": "steel", "len": 470, "section": "40×40", "showLabel": true, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T52", "name": "踏步2外口横杆", "cx": 2475.0, "cy": 1480.0, "cz": 446.6666666666667, "dx": 470.0, "dy": 40.0, "dz": 40.0, "kind": "steel", "len": 470, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T53", "name": "踏步2前下横杆", "cx": 2475.0, "cy": 1480.0, "cz": 213.33333333333334, "dx": 470.0, "dy": 40.0, "dz": 40.0, "kind": "steel", "len": 470, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T54", "name": "踏步2抽背横杆", "cx": 2475.0, "cy": 880.0, "cz": 213.33333333333334, "dx": 470.0, "dy": 40.0, "dz": 40.0, "kind": "steel", "len": 470, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T55", "name": "踏步3外口横杆", "cx": 2475.0, "cy": 1180.0, "cz": 680.0, "dx": 470.0, "dy": 40.0, "dz": 40.0, "kind": "steel", "len": 470, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T56", "name": "踏步3前下横杆", "cx": 2475.0, "cy": 1180.0, "cz": 446.6666666666667, "dx": 470.0, "dy": 40.0, "dz": 40.0, "kind": "steel", "len": 470, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T57", "name": "踏步3抽背横杆", "cx": 2475.0, "cy": 580.0, "cz": 446.6666666666667, "dx": 470.0, "dy": 40.0, "dz": 40.0, "kind": "steel", "len": 470, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T58", "name": "踏步4外口横杆", "cx": 2475.0, "cy": 880.0, "cz": 913.3333333333334, "dx": 470.0, "dy": 40.0, "dz": 40.0, "kind": "steel", "len": 470, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T59", "name": "踏步4前下横杆", "cx": 2475.0, "cy": 880.0, "cz": 680.0, "dx": 470.0, "dy": 40.0, "dz": 40.0, "kind": "steel", "len": 470, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T60", "name": "踏步4抽背横杆", "cx": 2475.0, "cy": 280.0, "cz": 680.0, "dx": 470.0, "dy": 40.0, "dz": 40.0, "kind": "steel", "len": 470, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T61", "name": "踏步5外口横杆", "cx": 2475.0, "cy": 580.0, "cz": 1146.6666666666667, "dx": 470.0, "dy": 40.0, "dz": 40.0, "kind": "steel", "len": 470, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T62", "name": "踏步5前下横杆", "cx": 2475.0, "cy": 580.0, "cz": 913.3333333333334, "dx": 470.0, "dy": 40.0, "dz": 40.0, "kind": "steel", "len": 470, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T63", "name": "踏步5后下横杆", "cx": 2475.0, "cy": 320.0, "cz": 913.3333333333334, "dx": 470.0, "dy": 40.0, "dz": 40.0, "kind": "steel", "len": 470, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T64", "name": "踏步6外口横杆", "cx": 2475.0, "cy": 280.0, "cz": 1440.0, "dx": 470.0, "dy": 40.0, "dz": 40.0, "kind": "steel", "len": 470, "section": "40×40", "showLabel": true, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T65", "name": "踏步6前下横杆", "cx": 2475.0, "cy": 280.0, "cz": 1146.6666666666667, "dx": 470.0, "dy": 40.0, "dz": 40.0, "kind": "steel", "len": 470, "section": "40×40", "showLabel": false, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T66", "name": "踏步6靠墙横杆", "cx": 2475.0, "cy": 20.0, "cz": 1440.0, "dx": 470.0, "dy": 40.0, "dz": 40.0, "kind": "steel", "len": 470, "section": "40×40", "showLabel": true, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T67", "name": "楼梯靠墙底横杆", "cx": 2475.0, "cy": 20.0, "cz": 20.0, "dx": 470.0, "dy": 40.0, "dz": 40.0, "kind": "steel", "len": 470, "section": "40×40", "showLabel": true, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "T68", "name": "楼梯中柱底横杆", "cx": 2475.0, "cy": 880.0, "cz": 20.0, "dx": 470.0, "dy": 40.0, "dz": 40.0, "kind": "steel", "len": 470, "section": "40×40", "showLabel": true, "diag": false, "piece": null, "noMesh": false, "remark": ""}, {"id": "FLOOR", "name": "地面", "cx": 725.0, "cy": 900.0, "cz": -1.0, "dx": 4850.0, "dy": 2200.0, "dz": 2.0, "kind": "floor", "len": 0, "section": "", "showLabel": false, "diag": false}, {"id": "M1", "name": "下床占位1900×1130×400(非方钢)", "cx": -550.0, "cy": 565.0, "cz": 200.0, "dx": 1900.0, "dy": 1130.0, "dz": 400.0, "kind": "marker", "len": 1900, "section": "", "showLabel": false, "diag": false}, {"id": "M2", "name": "床头外伸400悬挑区(示意)", "cx": 200.0, "cy": 600.0, "cz": 1399.0, "dx": 400.0, "dy": 1200.0, "dz": 2.0, "kind": "marker", "len": 1200, "section": "", "showLabel": false, "diag": false}, {"id": "M3", "name": "爬梯入口600(非方钢)", "cx": 300.0, "cy": 1150.0, "cz": 1660.0, "dx": 600.0, "dy": 60.0, "dz": 400.0, "kind": "marker", "len": 600, "section": "", "showLabel": false, "diag": false}, {"id": "M4", "name": "踏步1抽净空470×153×520", "cx": 2475.0, "cy": 1500.0, "cz": 116.5, "dx": 470.0, "dy": 520.0, "dz": 153.0, "kind": "marker", "len": 520, "section": "", "showLabel": false, "diag": false}, {"id": "M5", "name": "踏步2抽净空470×193×520", "cx": 2475.0, "cy": 1200.0, "cz": 329.83333333333337, "dx": 470.0, "dy": 520.0, "dz": 193.0, "kind": "marker", "len": 520, "section": "", "showLabel": false, "diag": false}, {"id": "M6", "name": "踏步3抽净空470×193×520", "cx": 2475.0, "cy": 900.0, "cz": 563.1666666666667, "dx": 470.0, "dy": 520.0, "dz": 193.0, "kind": "marker", "len": 520, "section": "", "showLabel": false, "diag": false}, {"id": "M7", "name": "踏步4抽净空470×193×520", "cx": 2475.0, "cy": 600.0, "cz": 796.5, "dx": 470.0, "dy": 520.0, "dz": 193.0, "kind": "marker", "len": 520, "section": "", "showLabel": false, "diag": false}, {"id": "M8", "name": "踏步5抽净空470×193×520", "cx": 2475.0, "cy": 300.0, "cz": 1029.8333333333335, "dx": 470.0, "dy": 520.0, "dz": 193.0, "kind": "marker", "len": 520, "section": "", "showLabel": false, "diag": false}, {"id": "M9", "name": "踏步6抽净空470×253×220", "cx": 2475.0, "cy": 150.0, "cz": 1293.1666666666667, "dx": 470.0, "dy": 220.0, "dz": 253.0, "kind": "marker", "len": 470, "section": "", "showLabel": false, "diag": false}];
+const CLAD = {"treads": [{"step": 1, "name": "踏步1木踏板", "x": 2182.4, "y": 1500.0, "z": 233.93, "dx": 585.2, "dy": 334.0, "dz": 18.0}, {"step": 2, "name": "踏步2木踏板", "x": 2182.4, "y": 1200.0, "z": 467.27, "dx": 585.2, "dy": 334.0, "dz": 18.0}, {"step": 3, "name": "踏步3木踏板", "x": 2182.4, "y": 900.0, "z": 700.6, "dx": 585.2, "dy": 334.0, "dz": 18.0}, {"step": 4, "name": "踏步4木踏板", "x": 2182.4, "y": 600.0, "z": 933.93, "dx": 585.2, "dy": 334.0, "dz": 18.0}, {"step": 5, "name": "踏步5木踏板", "x": 2182.4, "y": 300.0, "z": 1167.27, "dx": 585.2, "dy": 334.0, "dz": 18.0}, {"step": 6, "name": "踏步6木踏板", "x": 2182.4, "y": 0.0, "z": 1460.6, "dx": 585.2, "dy": 334.0, "dz": 18.0}], "sides": [{"step": 1, "name": "踏步1内侧封板", "x": 2183.4, "y": 1500.0, "z": 8.0, "dx": 16.0, "dy": 334.0, "dz": 225.53}, {"step": 1, "name": "踏步1外侧封板", "x": 2750.6, "y": 1500.0, "z": 8.0, "dx": 16.0, "dy": 334.0, "dz": 225.53}, {"step": 2, "name": "踏步2内侧封板", "x": 2183.4, "y": 1200.0, "z": 254.93, "dx": 16.0, "dy": 334.0, "dz": 211.93}, {"step": 2, "name": "踏步2外侧封板", "x": 2750.6, "y": 1200.0, "z": 254.93, "dx": 16.0, "dy": 334.0, "dz": 211.93}, {"step": 3, "name": "踏步3内侧封板", "x": 2183.4, "y": 900.0, "z": 488.27, "dx": 16.0, "dy": 334.0, "dz": 211.93}, {"step": 3, "name": "踏步3外侧封板", "x": 2750.6, "y": 900.0, "z": 488.27, "dx": 16.0, "dy": 334.0, "dz": 211.93}, {"step": 4, "name": "踏步4内侧封板", "x": 2183.4, "y": 600.0, "z": 721.6, "dx": 16.0, "dy": 334.0, "dz": 211.93}, {"step": 4, "name": "踏步4外侧封板", "x": 2750.6, "y": 600.0, "z": 721.6, "dx": 16.0, "dy": 334.0, "dz": 211.93}, {"step": 5, "name": "踏步5内侧封板", "x": 2183.4, "y": 300.0, "z": 954.93, "dx": 16.0, "dy": 334.0, "dz": 211.93}, {"step": 5, "name": "踏步5外侧封板", "x": 2750.6, "y": 300.0, "z": 954.93, "dx": 16.0, "dy": 334.0, "dz": 211.93}, {"step": 6, "name": "踏步6内侧封板", "x": 2183.4, "y": 0.0, "z": 1188.27, "dx": 16.0, "dy": 334.0, "dz": 271.93}, {"step": 6, "name": "踏步6外侧封板", "x": 2750.6, "y": 0.0, "z": 1188.27, "dx": 16.0, "dy": 334.0, "dz": 271.93}], "drawers": [{"step": 1, "name": "踏步1抽屉", "travel": 436.0, "parts": [{"mat": "front", "x": 2203.0, "y": 1802.0, "z": 8.0, "dx": 544.0, "dy": 18.0, "dz": 223.33}, {"mat": "side", "x": 2248.0, "y": 1244.0, "z": 14.0, "dx": 16.0, "dy": 555.0, "dz": 177.33}, {"mat": "side", "x": 2686.0, "y": 1244.0, "z": 14.0, "dx": 16.0, "dy": 555.0, "dz": 177.33}, {"mat": "in", "x": 2264.0, "y": 1244.0, "z": 14.0, "dx": 422.0, "dy": 555.0, "dz": 12.0}, {"mat": "in", "x": 2264.0, "y": 1244.0, "z": 26.0, "dx": 422.0, "dy": 16.0, "dz": 165.33}]}, {"step": 2, "name": "踏步2抽屉", "travel": 436.0, "parts": [{"mat": "front", "x": 2203.0, "y": 1502.0, "z": 254.93, "dx": 544.0, "dy": 18.0, "dz": 209.73}, {"mat": "side", "x": 2248.0, "y": 944.0, "z": 255.93, "dx": 16.0, "dy": 555.0, "dz": 168.73}, {"mat": "side", "x": 2686.0, "y": 944.0, "z": 255.93, "dx": 16.0, "dy": 555.0, "dz": 168.73}, {"mat": "in", "x": 2264.0, "y": 944.0, "z": 255.93, "dx": 422.0, "dy": 555.0, "dz": 12.0}, {"mat": "in", "x": 2264.0, "y": 944.0, "z": 267.93, "dx": 422.0, "dy": 16.0, "dz": 156.73}]}, {"step": 3, "name": "踏步3抽屉", "travel": 436.0, "parts": [{"mat": "front", "x": 2203.0, "y": 1202.0, "z": 488.27, "dx": 544.0, "dy": 18.0, "dz": 209.73}, {"mat": "side", "x": 2248.0, "y": 644.0, "z": 489.27, "dx": 16.0, "dy": 555.0, "dz": 168.73}, {"mat": "side", "x": 2686.0, "y": 644.0, "z": 489.27, "dx": 16.0, "dy": 555.0, "dz": 168.73}, {"mat": "in", "x": 2264.0, "y": 644.0, "z": 489.27, "dx": 422.0, "dy": 555.0, "dz": 12.0}, {"mat": "in", "x": 2264.0, "y": 644.0, "z": 501.27, "dx": 422.0, "dy": 16.0, "dz": 156.73}]}, {"step": 4, "name": "踏步4抽屉", "travel": 436.0, "parts": [{"mat": "front", "x": 2203.0, "y": 902.0, "z": 721.6, "dx": 544.0, "dy": 18.0, "dz": 209.73}, {"mat": "side", "x": 2248.0, "y": 344.0, "z": 722.6, "dx": 16.0, "dy": 555.0, "dz": 168.73}, {"mat": "side", "x": 2686.0, "y": 344.0, "z": 722.6, "dx": 16.0, "dy": 555.0, "dz": 168.73}, {"mat": "in", "x": 2264.0, "y": 344.0, "z": 722.6, "dx": 422.0, "dy": 555.0, "dz": 12.0}, {"mat": "in", "x": 2264.0, "y": 344.0, "z": 734.6, "dx": 422.0, "dy": 16.0, "dz": 156.73}]}, {"step": 5, "name": "踏步5抽屉", "travel": 436.0, "parts": [{"mat": "front", "x": 2203.0, "y": 602.0, "z": 954.93, "dx": 544.0, "dy": 18.0, "dz": 209.73}, {"mat": "side", "x": 2248.0, "y": 44.0, "z": 955.93, "dx": 16.0, "dy": 555.0, "dz": 168.73}, {"mat": "side", "x": 2686.0, "y": 44.0, "z": 955.93, "dx": 16.0, "dy": 555.0, "dz": 168.73}, {"mat": "in", "x": 2264.0, "y": 44.0, "z": 955.93, "dx": 422.0, "dy": 555.0, "dz": 12.0}, {"mat": "in", "x": 2264.0, "y": 44.0, "z": 967.93, "dx": 422.0, "dy": 16.0, "dz": 156.73}]}, {"step": 6, "name": "踏步6抽屉", "travel": 136.0, "parts": [{"mat": "front", "x": 2203.0, "y": 302.0, "z": 1188.27, "dx": 544.0, "dy": 18.0, "dz": 269.73}, {"mat": "side", "x": 2248.0, "y": 44.0, "z": 1189.27, "dx": 16.0, "dy": 255.0, "dz": 228.73}, {"mat": "side", "x": 2686.0, "y": 44.0, "z": 1189.27, "dx": 16.0, "dy": 255.0, "dz": 228.73}, {"mat": "in", "x": 2264.0, "y": 44.0, "z": 1189.27, "dx": 422.0, "dy": 255.0, "dz": 12.0}, {"mat": "in", "x": 2264.0, "y": 44.0, "z": 1201.27, "dx": 422.0, "dy": 16.0, "dz": 216.73}]}]};
 const STEELS = BOXES.filter(b => b.kind === 'steel');
 const SEGS = BOXES.filter(b => b.kind === 'seg');
 const isMobile = matchMedia('(max-width:768px), (pointer:coarse)').matches;
@@ -467,9 +477,104 @@ BOXES.forEach(b => {
     meshById.set(b.id, mesh);
   } else if (b.kind === 'marker') {
     meshById.set(b.id, mesh);
+    if ((b.name || '').indexOf('抽净空') >= 0) mesh.visible = false;
   }
   root.add(mesh);
 });
+
+function makeOakTexture() {
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 256;
+  const g = c.getContext('2d');
+  g.fillStyle = '#e7cfaa';
+  g.fillRect(0, 0, 512, 256);
+  for (let i = 0; i < 70; i++) {
+    const y = Math.random() * 256;
+    const shade = 90 + Math.random() * 70;
+    g.strokeStyle = 'rgba(' + shade + ',' + (shade * 0.72) + ',' + (shade * 0.42) + ',' + (0.05 + Math.random() * 0.1) + ')';
+    g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(0, y);
+    g.bezierCurveTo(160, y + (Math.random() * 6 - 3), 340, y + (Math.random() * 6 - 3), 512, y);
+    g.stroke();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  return tex;
+}
+
+const drawers = [];
+const drawerPick = [];
+const cladPick = [];
+function buildStairClad() {
+  const oak = makeOakTexture();
+  const woodMat = new THREE.MeshStandardMaterial({ map: oak, color: 0xffffff, roughness: 0.62, metalness: 0.02 });
+  const whiteMat = new THREE.MeshStandardMaterial({ color: 0xf4f1eb, roughness: 0.76, metalness: 0 });
+  const whiteIn = new THREE.MeshStandardMaterial({ color: 0xf7f5f1, roughness: 0.84, metalness: 0 });
+  function place(box, mat, parent) {
+    const geo = new THREE.BoxGeometry(box.dx, box.dz, box.dy);
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.copy(toThree(box.x + box.dx / 2, box.y + box.dy / 2, box.z + box.dz / 2));
+    mesh.castShadow = !isMobile;
+    mesh.receiveShadow = !isMobile;
+    parent.add(mesh);
+    return mesh;
+  }
+  CLAD.treads.forEach(t => {
+    const m = place(t, woodMat, root);
+    m.userData = { kind: 'clad', name: t.name };
+    cladPick.push(m);
+  });
+  CLAD.sides.forEach(s => {
+    const m = place(s, whiteMat, root);
+    m.userData = { kind: 'clad', name: s.name };
+    cladPick.push(m);
+  });
+  CLAD.drawers.forEach(d => {
+    const group = new THREE.Group();
+    root.add(group);
+    const rec = {
+      step: d.step, name: d.name, travel: d.travel, group: group,
+      open: 0, anim: null, fronts: [],
+    };
+    d.parts.forEach(p => {
+      const mat = p.mat === 'front' ? whiteMat.clone() : (p.mat === 'in' ? whiteIn : whiteMat);
+      const mesh = place(p, mat, group);
+      mesh.userData = { kind: 'drawer', rec: rec, role: p.mat };
+      drawerPick.push(mesh);
+      if (p.mat === 'front') rec.fronts.push(mesh);
+    });
+    drawers.push(rec);
+  });
+}
+function applyDrawer(d) { d.group.position.z = d.open; }
+function setDrawerHot(d, on) {
+  d.fronts.forEach(m => m.material.emissive.setHex(on ? 0x3a342c : 0x000000));
+}
+function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+function easeOutQuart(t) { return 1 - Math.pow(1 - t, 4); }
+function easeInOutCubic(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+function startDrawerAnim(d, target, ease) {
+  const dist = Math.abs(target - d.open);
+  if (dist < 0.5) { d.open = target; d.anim = null; applyDrawer(d); return; }
+  const dur = Math.min(860, Math.max(280, (ease === 'toggle' ? 460 : 300) + dist * 0.85));
+  d.anim = { from: d.open, to: target, t0: performance.now(), dur: dur, ease: ease };
+}
+function tickDrawers(now) {
+  drawers.forEach(d => {
+    if (!d.anim) return;
+    const t = Math.min(1, (now - d.anim.t0) / d.anim.dur);
+    const k = d.anim.ease === 'toggle' ? easeInOutCubic(t)
+      : (d.anim.ease === 'soft' ? easeOutQuart(t) : easeOutCubic(t));
+    d.open = d.anim.from + (d.anim.to - d.anim.from) * k;
+    if (t >= 1) { d.open = d.anim.to; d.anim = null; setDrawerHot(d, false); }
+    applyDrawer(d);
+  });
+}
+buildStairClad();
 
 /** 杆件尺寸：默认不标，点「杆件尺寸」再开；只留几根代表件 */
 function byName(list, pred) { return list.find(pred); }
@@ -973,7 +1078,106 @@ function highlight(id, focus=false){
 }
 
 const raycaster=new THREE.Raycaster(); const pointer=new THREE.Vector2();
+const pullAxis = new THREE.Vector3(0, 0, 1);
+const pullCam = new THREE.Vector3();
+const pullNormal = new THREE.Vector3();
+const pullPlane = new THREE.Plane();
+const pullHit = new THREE.Vector3();
 let ptrDown = null;
+let drawerDrag = null;
+
+function pickDrawer(ev) {
+  pointer.x = (ev.clientX / innerWidth) * 2 - 1;
+  pointer.y = -(ev.clientY / innerHeight) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObjects(drawerPick, false);
+  return hits.length ? hits[0] : null;
+}
+function pullHitZ(ev, origin) {
+  pointer.x = (ev.clientX / innerWidth) * 2 - 1;
+  pointer.y = -(ev.clientY / innerHeight) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  camera.getWorldDirection(pullCam);
+  pullNormal.crossVectors(pullAxis, pullCam).cross(pullAxis);
+  if (pullNormal.lengthSq() < 1e-8) pullNormal.set(0, 1, 0);
+  pullNormal.normalize();
+  pullPlane.setFromNormalAndCoplanarPoint(pullNormal, origin);
+  if (!raycaster.ray.intersectPlane(pullPlane, pullHit)) return null;
+  const dist = pullHit.distanceTo(raycaster.ray.origin);
+  if (dist < 1 || dist > 30000) return null;
+  return pullHit.z;
+}
+function hidePullHint() {
+  const el = document.getElementById('pullHint');
+  if (el) el.style.display = 'none';
+}
+function releaseDrawer(rec) {
+  const samples = rec.samples || [];
+  let v = 0;
+  if (samples.length >= 2) {
+    const a = samples[samples.length - 1];
+    let b = samples[0];
+    for (let i = samples.length - 1; i >= 0; i--) {
+      if (a.t - samples[i].t >= 80) { b = samples[i]; break; }
+      b = samples[i];
+    }
+    const dt = a.t - b.t;
+    if (dt > 8) v = (a.open - b.open) / dt;
+  }
+  let target = rec.open > rec.travel * 0.38 ? rec.travel : 0;
+  if (v > 0.22) target = rec.travel;
+  else if (v < -0.22) target = 0;
+  startDrawerAnim(rec, target, target > rec.open ? 'out' : 'soft');
+}
+renderer.domElement.addEventListener('pointerdown', (ev) => {
+  if (ev.button !== 0) return;
+  const hit = pickDrawer(ev);
+  if (!hit) return;
+  ev.stopImmediatePropagation();
+  ev.preventDefault();
+  const rec = hit.object.userData.rec;
+  rec.anim = null;
+  rec.samples = [{ t: performance.now(), open: rec.open }];
+  setDrawerHot(rec, true);
+  controls.enabled = false;
+  hidePullHint();
+  drawerDrag = {
+    rec: rec, id: ev.pointerId, x: ev.clientX, y: ev.clientY,
+    grabOpen: rec.open, origin: hit.point.clone(), moved: false,
+  };
+}, true);
+window.addEventListener('pointermove', (ev) => {
+  if (!drawerDrag || ev.pointerId !== drawerDrag.id) return;
+  if (Math.hypot(ev.clientX - drawerDrag.x, ev.clientY - drawerDrag.y) > 8) drawerDrag.moved = true;
+  const z = pullHitZ(ev, drawerDrag.origin);
+  if (z == null) return;
+  const delta = z - drawerDrag.origin.z;
+  if (Math.abs(delta) > 2400) return;
+  const rec = drawerDrag.rec;
+  rec.open = Math.min(rec.travel, Math.max(0, drawerDrag.grabOpen + delta));
+  applyDrawer(rec);
+  rec.samples.push({ t: performance.now(), open: rec.open });
+  if (rec.samples.length > 8) rec.samples.shift();
+});
+function endDrawerDrag(ev) {
+  if (!drawerDrag || (ev && ev.pointerId !== drawerDrag.id)) return;
+  const rec = drawerDrag.rec;
+  const moved = drawerDrag.moved;
+  drawerDrag = null;
+  controls.enabled = true;
+  if (!moved) {
+    const target = rec.open > rec.travel * 0.5 ? 0 : rec.travel;
+    startDrawerAnim(rec, target, 'toggle');
+  } else {
+    releaseDrawer(rec);
+  }
+}
+window.addEventListener('pointerup', endDrawerDrag);
+window.addEventListener('pointercancel', endDrawerDrag);
+renderer.domElement.addEventListener('pointermove', (ev) => {
+  if (drawerDrag) { renderer.domElement.style.cursor = 'grabbing'; return; }
+  renderer.domElement.style.cursor = pickDrawer(ev) ? 'grab' : '';
+});
 renderer.domElement.addEventListener('pointerdown', (ev)=>{
   if(ev.button!==0) return;
   ptrDown = { x: ev.clientX, y: ev.clientY, id: ev.pointerId };
@@ -987,7 +1191,12 @@ renderer.domElement.addEventListener('pointerup', (ev)=>{
   pointer.x=(ev.clientX/innerWidth)*2-1; pointer.y=-(ev.clientY/innerHeight)*2+1;
   raycaster.setFromCamera(pointer, camera);
   const pick = [...meshById.values()].filter(m => m.userData.kind === 'steel' || m.userData.kind === 'seg');
+  const cover = raycaster.intersectObjects(cladPick.concat(drawerPick), false);
   const hits=raycaster.intersectObjects(pick, false);
+  if (cover.length && (!hits.length || cover[0].distance <= hits[0].distance + 0.5)) {
+    clearHighlight();
+    return;
+  }
   if(hits.length) highlight(hits[0].object.userData.id, false);
   else clearHighlight();
 });
@@ -1014,7 +1223,12 @@ function onResize(){
 }
 addEventListener('resize', onResize);
 addEventListener('orientationchange', ()=> setTimeout(onResize, 200));
-(function animate(){ requestAnimationFrame(animate); controls.update(); renderer.render(scene,camera); })();
+(function animate(now){
+  requestAnimationFrame(animate);
+  tickDrawers(now || performance.now());
+  controls.update();
+  renderer.render(scene, camera);
+})();
 
 } catch (err) {
   showBootError(err);
